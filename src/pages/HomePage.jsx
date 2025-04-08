@@ -34,7 +34,7 @@ const HomePage = () => {
     <div>
       <section className="relative bg-eco pb-10 pt-16 md:py-20 overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-10">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?q=80&w=2070')] bg-cover bg-center" />
+          <div className="absolute inset-0 bg-[url('https://media.istockphoto.com/id/1165099864/photo/plastic-free-set-with-eco-cotton-bag-glass-jar-green-leaves-and-recycled-tableware-top-view.webp?a=1&b=1&s=612x612&w=0&k=20&c=usar9V7DhBWkDIskLAh0ETV5R3kMyuJmk3IwJWGb_Ko=')] bg-cover bg-center" />
         </div>
         <div className="container-custom relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -63,7 +63,7 @@ const HomePage = () => {
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
                 <img 
-                  src="https://images.unsplash.com/photo-1593443601238-67e54a7db53f?q=80&w=1974" 
+                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744076756/BagStory/Small-Wine-Liquor-Bag-black-01-1-768x768_ixjjga.jpg" 
                   alt="Eco-friendly bags" 
                   className="rounded-lg shadow-lg max-w-full h-auto"
                 />
@@ -81,7 +81,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <img 
-                src="https://images.unsplash.com/photo-1591824438708-ce405f36ba3d?q=80&w=1974" 
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744076755/BagStory/eco-packaging-03-800x586_ujtfqu.jpg" 
                 alt="About Eco Packaging Products" 
                 className="rounded-lg shadow-md"
               />

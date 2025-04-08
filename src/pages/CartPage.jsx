@@ -4,10 +4,12 @@ import { Trash2, ShoppingBag, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/hooks/useCart";
-import { toast } from "sonner"; // Import toast for notifications
+import { useAuth } from "@/hooks/useAuth"; // Add this import
+import { toast } from "sonner";
 
 const CartPage = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { isAuthenticated } = useAuth(); // Add this to check if user is logged in
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const navigate = useNavigate();
@@ -58,6 +60,11 @@ const CartPage = () => {
   };
 
   const handleCheckout = () => {
+    if (!isAuthenticated) {
+      toast.info("Please log in to proceed to checkout.");
+      navigate("/login");
+      return;
+    }
     navigate("/checkout");
   };
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Add useEffect
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,14 +14,18 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
+import { createOrder, updateUserProfile } from "@/utils/api"; // Add updateUserProfile
 
 const CheckoutPage = () => {
   const { cartItems, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [step, setStep] = useState("details");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Initialize state with user data if available
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,11 +37,24 @@ const CheckoutPage = () => {
   const [country, setCountry] = useState("US");
   const [saveInfo, setSaveInfo] = useState(false);
 
-  const [paymentMethod, setPaymentMethod] = useState("credit-card");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [cvv, setCvv] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("paypal"); // Default to PayPal
+
+  // Pre-fill user details when component mounts
+  useEffect(() => {
+    if (user) {
+      // Split the name into firstName and lastName
+      const nameParts = user.name ? user.name.split(" ") : ["", ""];
+      setFirstName(nameParts[0] || "");
+      setLastName(nameParts.slice(1).join(" ") || "");
+      setEmail(user.email || "");
+      setPhone(user.phone || "");
+      setAddress(user.address || "");
+      setCity(user.city || "");
+      setState(user.state || "");
+      setZipCode(user.zipCode || "");
+      setCountry(user.country || "US");
+    }
+  }, [user]);
 
   // Function to determine the price per case based on quantity
   const getPricePerCase = (item) => {
@@ -79,23 +96,7 @@ const CheckoutPage = () => {
   };
 
   const validatePayment = () => {
-    if (paymentMethod === "credit-card") {
-      if (!cardNumber || !cardName || !expiryDate || !cvv) {
-        toast.error("Please fill in all payment details");
-        return false;
-      }
-
-      if (cardNumber.replace(/\s/g, '').length !== 16) {
-        toast.error("Please enter a valid 16-digit card number");
-        return false;
-      }
-
-      if (cvv.length < 3) {
-        toast.error("Please enter a valid CVV code");
-        return false;
-      }
-    }
-
+    // No validation needed for PayPal since it redirects to PayPal's site
     return true;
   };
 
@@ -107,17 +108,63 @@ const CheckoutPage = () => {
     }
   };
 
-  const handlePaymentSubmit = (e) => {
+  const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     if (validatePayment()) {
       setIsProcessing(true);
 
-      setTimeout(() => {
+      try {
+        // Check if user is authenticated
+        if (!user) {
+          toast.error("Please log in to place an order.");
+          navigate("/login");
+          return;
+        }
+
+        // Prepare order items
+        const orderItems = cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          pricePerCase: getPricePerCase(item),
+          moq: item.moq,
+        }));
+
+        // Create the order
+        const orderData = {
+          items: orderItems,
+          total: total,
+        };
+
+        await createOrder(user.id, orderData);
+
+        // Save user details if saveInfo is checked
+        if (saveInfo) {
+          const updatedData = {
+            name: `${firstName} ${lastName}`.trim(),
+            email,
+            phone,
+            address,
+            city,
+            state,
+            zipCode,
+            country
+          };
+          await updateUserProfile(user.id, updatedData);
+        }
+
+        // Simulate payment processing
+        setTimeout(() => {
+          setIsProcessing(false);
+          setStep("confirmation");
+          clearCart();
+          window.scrollTo(0, 0);
+        }, 2000);
+      } catch (err) {
         setIsProcessing(false);
-        setStep("confirmation");
-        clearCart();
-        window.scrollTo(0, 0);
-      }, 2000);
+        toast.error("Failed to place order. Please try again.");
+        console.error("Error placing order:", err);
+      }
     }
   };
 
@@ -345,88 +392,15 @@ const CheckoutPage = () => {
                   <div className="mb-6">
                     <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value)}>
                       <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
-                        <RadioGroupItem value="credit-card" id="payment-credit-card" />
-                        <Label htmlFor="payment-credit-card">Credit Card</Label>
-                      </div>
-                      <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
                         <RadioGroupItem value="paypal" id="payment-paypal" />
                         <Label htmlFor="payment-paypal">PayPal</Label>
-                      </div>
-                      <div className="flex items-center space-x-2 border rounded-md p-4">
-                        <RadioGroupItem value="bank-transfer" id="payment-bank" />
-                        <Label htmlFor="payment-bank">Bank Transfer</Label>
                       </div>
                     </RadioGroup>
                   </div>
 
-                  {paymentMethod === "credit-card" && (
-                    <div className="space-y-6">
-                      <div>
-                        <Label htmlFor="cardNumber" className="block mb-2">
-                          Card Number <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="cardNumber"
-                          value={cardNumber}
-                          onChange={(e) => setCardNumber(e.target.value)}
-                          placeholder="1234 5678 9012 3456"
-                          maxLength={19}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cardName" className="block mb-2">
-                          Name on Card <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="cardName"
-                          value={cardName}
-                          onChange={(e) => setCardName(e.target.value)}
-                          placeholder="John Doe"
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-6">
-                        <div>
-                          <Label htmlFor="expiryDate" className="block mb-2">
-                            Expiry Date <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="expiryDate"
-                            value={expiryDate}
-                            onChange={(e) => setExpiryDate(e.target.value)}
-                            placeholder="MM/YY"
-                            maxLength={5}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="cvv" className="block mb-2">
-                            CVV <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="cvv"
-                            type="password"
-                            value={cvv}
-                            onChange={(e) => setCvv(e.target.value)}
-                            placeholder="123"
-                            maxLength={4}
-                            required
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {paymentMethod === "paypal" && (
                     <div className="text-center py-6">
                       <p className="mb-4">You will be redirected to PayPal to complete your payment.</p>
-                    </div>
-                  )}
-
-                  {paymentMethod === "bank-transfer" && (
-                    <div className="text-center py-6">
-                      <p className="mb-4">You will receive our bank details to complete your payment.</p>
                     </div>
                   )}
 
@@ -491,6 +465,7 @@ const CheckoutPage = () => {
   );
 };
 
+// OrderSummary component remains unchanged
 const OrderSummary = ({
   cartItems,
   subtotal,

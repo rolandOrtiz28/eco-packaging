@@ -1,15 +1,21 @@
+// src/hooks/useAuth.js
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    console.log("Stored user from localStorage:", storedUser); // Log what’s in localStorage
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        console.log("Parsed user:", parsedUser); // Log the parsed user
+        setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user from localStorage:', error);
         localStorage.removeItem('user');
@@ -25,15 +31,23 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    navigate("/"); // Redirect to home page after login
+  };
+
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('user');
+    navigate("/login"); // Redirect to login page after logout
   };
 
   const isAuthenticated = !!user;
-  const isAdmin = isAuthenticated && user.role === 'admin';
+  const isAdmin = isAuthenticated && user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, setUser, isAuthenticated, isAdmin, logout }}>
+    <AuthContext.Provider value={{ user, setUser, isAuthenticated, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

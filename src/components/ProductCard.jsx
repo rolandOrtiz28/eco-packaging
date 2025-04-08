@@ -22,8 +22,8 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
   };
 
   // Calculate the per-case price for the distributor mode (bulk price)
-  const unitsPerCase = product.moq; // Number of units per case (from moq)
-  const bulkPricePerCase = (product.bulkPrice * unitsPerCase).toFixed(2); // Total price for 6 to 50 cases
+  const unitsPerCase = product.pcsPerCase; // Use pcsPerCase instead of moq
+  const bulkPricePerCase = (product.bulkPrice * unitsPerCase).toFixed(2); // Total price per case using bulkPrice
 
   return (
     <div className="group bg-white rounded-lg shadow-sm overflow-hidden card-hover">
@@ -36,12 +36,12 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
           />
         </div>
         <div className="p-4">
-          <h3 className="font-medium text-lg mb-1 line-clamp-1">{product.name}</h3>
+          <h3 className="font-medium text-md mb-1 line-clamp-1">{product.name}</h3>
           {!isDistributor ? (
             <div className="mb-4">
               {/* Display the number of pieces in 1 case in green text */}
               <p className="text-eco font-bold text-sm mb-1">
-                1 Case: {product.moq}pcs
+                1 Case: {product.pcsPerCase}pcs
               </p>
               {/* Display pricing tiers */}
               {product.details.pricing.map((priceTier, index) => {
@@ -52,7 +52,7 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
                     : "Please contact office"; // For 50+ cases
                 return (
                   <p key={index} className="text-sm text-gray-700">
-                    {priceTier.case.replace(/\(.*?\)/, "")}:{" "} {/* Remove (1000pcs) from the case string */}
+                    {priceTier.case.replace(/\(.*?\)/, "")}:{" "}
                     {typeof priceTier.pricePerUnit === "number" ? (
                       <>
                         <span>¢ {priceTier.pricePerUnit.toFixed(2)} ea - </span>
@@ -68,12 +68,12 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
           ) : (
             <div className="mb-4">
               <p className="text-eco font-bold text-sm">${bulkPricePerCase} per case</p>
-              <p className="text-sm text-muted-foreground">MOQ: {product.moq} units per case</p>
+              <p className="text-sm text-muted-foreground">MOQ: {product.moq} Cases</p>
             </div>
           )}
           <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{product.description}</p>
           <div className="text-sm text-gray-700 mb-2">
-          {product.details.note && <p><strong>Note:</strong> {product.details.note}</p>}
+            {product.details.note && <p><strong>Note:</strong> {product.details.note}</p>}
             <p><strong>Size:</strong> {product.details.size}</p>
             <p><strong>Color:</strong> {product.details.color}</p>
             <p><strong>Material:</strong> {product.details.material}</p>

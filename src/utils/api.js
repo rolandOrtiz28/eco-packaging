@@ -5,9 +5,10 @@ const productsData = [
     id: 1,
     name: "Wine Vest Bag (1/2 Two Bottle Wine Bag)",
     description: "A premium non-woven bag designed for carrying one or two wine bottles. Ideal for wine and liquor stores.",
-    price: 0.10, // $110/case for 1000 pcs → $0.11/unit (1–5 cases)
-    bulkPrice: 0.09, // $100/case for 1000 pcs → $0.10/unit (6–50 cases)
-    moq: 1000,
+    price: 0.10, // $100/case for 1000 pcs → $0.10/unit (1–5 cases)
+    bulkPrice: 0.09, // $90/case for 1000 pcs → $0.09/unit (6–50 cases)
+    moq: 50,
+    pcsPerCase: 1000,
     image: "https://images.unsplash.com/photo-1542456870-7c27d91a7631?auto=format&fit=crop&w=800&q=80",
     category: "Wine Bags",
     tags: ["wine", "vest", "non-woven"],
@@ -30,7 +31,8 @@ const productsData = [
     description: "A small non-woven vest bag, perfect for beer, snacks, and deli items.",
     price: 0.10, // $100/case for 1000 pcs → $0.10/unit (1–5 cases)
     bulkPrice: 0.09, // $90/case for 1000 pcs → $0.09/unit (6–50 cases)
-    moq: 1000,
+    moq: 50,
+    pcsPerCase: 1000,
     image: "https://images.unsplash.com/photo-1593443601238-67e54a7db53f?auto=format&fit=crop&w=800&q=80",
     category: "Vest Bags",
     tags: ["small", "vest", "non-woven"],
@@ -53,7 +55,8 @@ const productsData = [
     description: "A medium-sized non-woven vest bag, suitable for deli and supermarket use.",
     price: 0.11, // $110/case for 1000 pcs → $0.11/unit (1–5 cases)
     bulkPrice: 0.09, // $90/case for 1000 pcs → $0.09/unit (6–50 cases)
-    moq: 1000,
+    moq: 50,
+    pcsPerCase: 1000,
     image: "https://images.unsplash.com/photo-1572163064776-36c7d5bb7a3b?auto=format&fit=crop&w=800&q=80",
     category: "Vest Bags",
     tags: ["medium", "vest", "non-woven"],
@@ -76,7 +79,8 @@ const productsData = [
     description: "A large non-woven vest bag, ideal for deli and supermarket use.",
     price: 0.12, // $72/case for 600 pcs → $0.12/unit (1–5 cases)
     bulkPrice: 0.10, // $60/case for 600 pcs → $0.10/unit (6–50 cases)
-    moq: 600,
+    moq: 50,
+    pcsPerCase: 600,
     image: "https://images.unsplash.com/photo-1602830364173-fdfb9f43402b?auto=format&fit=crop&w=800&q=80",
     category: "Vest Bags",
     tags: ["large", "vest", "non-woven"],
@@ -99,7 +103,8 @@ const productsData = [
     description: "A slightly larger non-woven vest bag, perfect for mini marts and supermarkets.",
     price: 0.13, // $65/case for 500 pcs → $0.13/unit (1–5 cases)
     bulkPrice: 0.11, // $55/case for 500 pcs → $0.11/unit (6–50 cases)
-    moq: 500,
+    moq: 50,
+    pcsPerCase: 500,
     image: "https://images.unsplash.com/photo-1602830364173-fdfb9f43402b?auto=format&fit=crop&w=800&q=80",
     category: "Vest Bags",
     tags: ["large", "vest", "non-woven"],
@@ -122,7 +127,8 @@ const productsData = [
     description: "An extra-large non-woven vest bag, suitable for supermarkets and 99 cent stores.",
     price: 0.20, // $80/case for 400 pcs → $0.20/unit (1–5 cases)
     bulkPrice: 0.18, // $72/case for 400 pcs → $0.18/unit (6–50 cases)
-    moq: 400,
+    moq: 50,
+    pcsPerCase: 400,
     image: "https://images.unsplash.com/photo-1602830364173-fdfb9f43402b?auto=format&fit=crop&w=800&q=80",
     category: "Vest Bags",
     tags: ["xx-large", "vest", "non-woven"],
@@ -145,7 +151,8 @@ const productsData = [
     description: "A jumbo-sized non-woven bag, perfect for wholesalers.",
     price: 0.21, // $315/bundle for 1500 pcs → $0.21/unit (1–5 bundles)
     bulkPrice: 0.19, // $285/bundle for 1500 pcs → $0.19/unit (5+ bundles)
-    moq: 1500,
+    moq: 50,
+    pcsPerCase: 1500,
     image: "https://images.unsplash.com/photo-1572163064776-36c7d5bb7a3b?auto=format&fit=crop&w=800&q=80",
     category: "Tote Bags",
     tags: ["jumbo", "non-woven"],
@@ -168,7 +175,8 @@ const productsData = [
     description: "A heavy-duty non-woven vest bag, designed to support up to 50 lbs, ideal for heavy products.",
     price: 0.16, // $80/case for 500 pcs → $0.16/unit (1–5 cases)
     bulkPrice: 0.135, // $67.5/case for 500 pcs → $0.135/unit (6–50 cases)
-    moq: 500,
+    moq: 50,
+    pcsPerCase: 500,
     image: "https://images.unsplash.com/photo-1602830364173-fdfb9f43402b?auto=format&fit=crop&w=800&q=80",
     category: "Vest Bags",
     tags: ["heavy-duty", "vest", "non-woven"],
@@ -191,7 +199,8 @@ const productsData = [
     description: "A non-woven bag with die-cut handles, suitable for book stores, game stores, and medical offices.",
     price: 0.11, // $110/case for 1000 pcs → $0.11/unit (1–5 cases)
     bulkPrice: 0.10, // $100/case for 1000 pcs → $0.10/unit (6–50 cases)
-    moq: 1000,
+    moq: 50,
+    pcsPerCase: 1000,
     image: "https://images.unsplash.com/photo-1593443601238-67e54a7db53f?auto=format&fit=crop&w=800&q=80",
     category: "Specialty Bags",
     tags: ["die-cut", "non-woven"],
@@ -214,7 +223,8 @@ const productsData = [
     description: "A non-woven tote bag designed to carry two wine bottles, perfect for liquor stores.",
     price: 0.18, // $72/case for 400 pcs → $0.18/unit (1–5 cases)
     bulkPrice: 0.17, // $68/case for 400 pcs → $0.17/unit (6–50 cases)
-    moq: 400,
+    moq: 50,
+    pcsPerCase: 400,
     image: "https://images.unsplash.com/photo-1542456870-7c27d91a7631?auto=format&fit=crop&w=800&q=80",
     category: "Wine Bags",
     tags: ["wine", "tote", "non-woven"],
@@ -237,7 +247,8 @@ const productsData = [
     description: "A large non-woven tote bag, ideal for grocery stores, delis, and retail.",
     price: 0.22, // $66/case for 300 pcs → $0.22/unit (1–5 cases)
     bulkPrice: 0.20, // $60/case for 300 pcs → $0.20/unit (6–50 cases)
-    moq: 300,
+    moq: 50,
+    pcsPerCase: 300,
     image: "https://images.unsplash.com/photo-1572163064776-36c7d5bb7a3b?auto=format&fit=crop&w=800&q=80",
     category: "Tote Bags",
     tags: ["large", "tote", "non-woven"],
@@ -260,7 +271,8 @@ const productsData = [
     description: "A jumbo non-woven tote bag, perfect for everyday grocery shopping.",
     price: 0.25, // $75/case for 300 pcs → $0.25/unit (1–5 cases)
     bulkPrice: 0.23, // $69/case for 300 pcs → $0.23/unit (6–50 cases)
-    moq: 300,
+    moq: 50,
+    pcsPerCase: 300,
     image: "https://images.unsplash.com/photo-1572163064776-36c7d5bb7a3b?auto=format&fit=crop&w=800&q=80",
     category: "Tote Bags",
     tags: ["jumbo", "tote", "non-woven"],
@@ -283,7 +295,8 @@ const productsData = [
     description: "A thermal insulated non-woven tote bag, ideal for lunch carriers and delivery.",
     price: 3.50, // $350/case for 100 pcs → $3.50/unit (1–5 cases)
     bulkPrice: 3.00, // $300/case for 100 pcs → $3.00/unit (6–50 cases)
-    moq: 100,
+    moq: 50,
+    pcsPerCase: 100,
     image: "https://images.unsplash.com/photo-1605733513597-a8f8341084e6?auto=format&fit=crop&w=800&q=80",
     category: "Specialty Bags",
     tags: ["thermal", "tote", "non-woven"],
@@ -307,7 +320,8 @@ const productsData = [
     description: "A heavy-duty reusable non-woven tote bag, perfect for everyday grocery shopping.",
     price: 2.50, // $250/case for 100 pcs → $2.50/unit (1–5 cases)
     bulkPrice: 2.00, // $200/case for 100 pcs → $2.00/unit (6–50 cases)
-    moq: 100,
+    moq: 50,
+    pcsPerCase: 100,
     image: "https://images.unsplash.com/photo-1572163064776-36c7d5bb7a3b?auto=format&fit=crop&w=800&q=80",
     category: "Tote Bags",
     tags: ["heavy-duty", "tote", "non-woven"],
@@ -331,7 +345,8 @@ const productsData = [
     description: "A non-woven bag designed to carry six wine bottles, ideal for liquor stores.",
     price: 2.00, // $200/case for 100 pcs → $2.00/unit (1 case)
     bulkPrice: 2.00, // No 6–50 cases pricing, so use the same as 1 case
-    moq: 100,
+    moq: 50,
+    pcsPerCase: 100,
     image: "https://images.unsplash.com/photo-1542456870-7c27d91a7631?auto=format&fit=crop&w=800&q=80",
     category: "Wine Bags",
     tags: ["wine", "non-woven"],
@@ -352,9 +367,10 @@ const productsData = [
     id: 16,
     name: "Mylar Film Gift Bag",
     description: "A mylar film gift bag with ribbon, perfect for gifting.",
-    price: 6.00, // $3000/case for 500 pcs → $6.00/unit (1–5 cases)
-    bulkPrice: 5.00, // $2500/case for 500 pcs → $5.00/unit (6–50 cases)
-    moq: 5000,
+    price: 0.60, // $3000/case for 500 pcs → $6.00/unit (1–5 cases)
+    bulkPrice: 0.50, // $2500/case for 500 pcs → $5.00/unit (6–50 cases)
+    moq: 50,
+    pcsPerCase: 5000,
     image: "https://images.unsplash.com/photo-1607344645866-009c320b63e0?auto=format&fit=crop&w=800&q=80",
     category: "Gift Bags",
     tags: ["mylar", "gift", "non-woven"],
@@ -374,7 +390,7 @@ const productsData = [
   },
 ];
 
-const blogPostsData= [
+const blogPostsData = [
   {
     id: 1,
     title: "The Environmental Impact of Sustainable Packaging",
@@ -437,21 +453,83 @@ const blogPostsData= [
   }
 ];
 
+// Simulated order data for the regular user
+// Simulated order data storage (replace static userOrders)
+let userOrders = {
+  2: [], // Start with an empty array for user ID 2 (Regular User)
+};
 
+
+
+// Simulated user data with additional fields
 const usersData = [
   {
     id: 1,
     name: "Admin User",
     email: "admin@example.com",
-    role: "admin"
+    role: "admin",
+    phone: "+1 (555) 123-4567",
+    address: "123 Admin St",
+    city: "Admin City",
+    state: "CA",
+    zipCode: "90001",
+    country: "US"
   },
   {
     id: 2,
     name: "Regular User",
     email: "user@example.com",
-    role: "user"
+    role: "user",
+    phone: "+1 (555) 987-6543",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "US"
   }
 ];
+
+// Function to update user profile
+export const updateUserProfile = async (userId, updatedData) => {
+  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+
+  const userIndex = usersData.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    throw new Error(`User with ID ${userId} not found`);
+  }
+
+  usersData[userIndex] = {
+    ...usersData[userIndex],
+    ...updatedData
+  };
+
+  console.log(`Updated user profile for user ${userId}:`, usersData[userIndex]);
+  return usersData[userIndex];
+};
+
+// Function to create a new order
+export const createOrder = async (userId, orderData) => {
+  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+
+  // Generate a unique order ID (e.g., ECO-XXXX)
+  const orderId = `ECO-${String(Object.keys(userOrders).length + 1).padStart(4, '0')}`;
+  
+  const newOrder = {
+    id: orderId,
+    date: new Date().toISOString().split('T')[0], // Current date (e.g., 2025-04-08)
+    status: "Processing", // Default status
+    items: orderData.items,
+    total: orderData.total,
+  };
+
+  if (!userOrders[userId]) {
+    userOrders[userId] = [];
+  }
+  userOrders[userId].push(newOrder);
+
+  console.log(`Order created for user ${userId}:`, newOrder);
+  return newOrder;
+};
 
 export const getProducts = async () => {
   await new Promise(resolve => setTimeout(resolve, 800));
@@ -540,6 +618,23 @@ export const register = async (data) => {
   usersData.push(newUser);
   
   return newUser;
+};
+
+// New function to fetch user profile data, including orders
+export const getUserProfile = async (userId) => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const user = usersData.find(u => u.id === userId);
+  if (!user) {
+    throw new Error(`User with ID ${userId} not found`);
+  }
+
+  const userWithOrders = {
+    ...user,
+    orders: userOrders[userId] || [],
+  };
+  console.log("Returning user profile:", userWithOrders);
+  return userWithOrders;
 };
 
 export const getAnalyticsData = async () => {

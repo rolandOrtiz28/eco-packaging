@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Add useEffect
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,20 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser } = useAuth();
+  const { setUser, isAuthenticated } = useAuth(); // Add isAuthenticated
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      toast({
+        title: "Already Logged In",
+        description: "You are already logged in. Redirecting to homepage.",
+      });
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate, toast]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

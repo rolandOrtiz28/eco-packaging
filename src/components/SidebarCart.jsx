@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { X, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth"; // Add this import
+import { useNavigate } from "react-router-dom"; // Add this import
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { toast } from "sonner"; // Add this import
 
 function SidebarCart() {
   const [open, setOpen] = useState(false);
   const { cartItems, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { isAuthenticated } = useAuth(); // Add this to check if user is logged in
+  const navigate = useNavigate(); // Add this for navigation
 
   const totalItems = cartItems.length;
 
@@ -33,6 +38,17 @@ function SidebarCart() {
     (total, item) => total + getPricePerCase(item) * item.quantity,
     0
   );
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      toast.info("Please log in to proceed to checkout.");
+      navigate("/login");
+      setOpen(false);
+      return;
+    }
+    navigate("/checkout");
+    setOpen(false);
+  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -131,12 +147,11 @@ function SidebarCart() {
               </div>
               <div className="flex flex-col gap-2">
                 <Button
-                  asChild
                   variant="default"
                   className="w-full bg-eco hover:bg-eco-dark"
-                  onClick={() => setOpen(false)}
+                  onClick={handleCheckout} // Replace Link with onClick handler
                 >
-                  <Link to="/checkout">Checkout</Link>
+                  Checkout
                 </Button>
                 <Button
                   asChild

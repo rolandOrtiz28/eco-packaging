@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Add useEffect
 import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -31,8 +31,19 @@ const registerSchema = z.object({
 const RegisterPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { setUser, isAuthenticated, user } = useAuth(); // Add isAuthenticated and user
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      toast({
+        title: "Already Logged In",
+        description: "You are already logged in. Redirecting to homepage.",
+      });
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate, toast]);
 
   const form = useForm({
     resolver: zodResolver(registerSchema),
@@ -47,17 +58,22 @@ const RegisterPage = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      const user = await registerUser({
+      const newUser = await registerUser({
         name: data.name,
         email: data.email,
         password: data.password,
       });
-      setUser(user);
+      setUser(newUser);
       toast({
         title: "Registration successful",
         description: "Your account has been created",
       });
-      navigate("/admin/dashboard");
+      // Redirect based on user role
+      if (newUser.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       toast({
         title: "Registration failed",

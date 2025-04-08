@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Menu, X, User, ShoppingBag } from "lucide-react";
+import { Menu, X, User, ShoppingBag, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // Add these imports
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -59,7 +67,7 @@ function Header() {
               About
             </NavLink>
             <NavLink 
-              to="/advertisement" // New Advertisement link
+              to="/advertisement"
               className={({ isActive }) => 
                 `text-sm font-medium transition-colors hover:text-eco ${
                   isActive ? "text-eco" : "text-foreground"
@@ -98,7 +106,6 @@ function Header() {
             >
               Blog
             </NavLink>
-           
             <NavLink 
               to="/contact" 
               className={({ isActive }) => 
@@ -111,64 +118,86 @@ function Header() {
             </NavLink>
           </nav>
 
-          <div className="hidden md:flex items-center space-x-2">
-           
-            
-            {isAuthenticated ? (
-              <>
-                {isAdmin && (
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to="/admin/dashboard">
-                      <User className="mr-1 h-4 w-4" />
-                      Dashboard
-                    </Link>
+          <div className="flex items-center space-x-2">
+            {/* Desktop Dropdown Menu */}
+            <div className="hidden md:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <User className="h-5 w-5" />
+                    {totalItems > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">
+                        {totalItems}
+                      </span>
+                    )}
                   </Button>
-                )}
-                 <Button variant="ghost" size="icon" className="relative mr-2" asChild>
-              <Link to="/cart">
-                <ShoppingBag className="h-5 w-5" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">
-                    {totalItems}
-                  </span>
-                )}
-              </Link>
-            </Button>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login">Login</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link to="/register">Register</Link>
-                </Button>
-              </>
-            )}
-          </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {isAuthenticated ? (
+                    <>
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      {isAdmin && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/dashboard">
+                            <User className="mr-2 h-4 w-4" />
+                            Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/cart">
+                          <ShoppingBag className="mr-2 h-4 w-4" />
+                          Cart {totalItems > 0 && `(${totalItems})`}
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/login">
+                          Login
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/register">
+                          Register
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-          <div className="flex items-center md:hidden space-x-2">
-            <Button variant="ghost" size="icon" className="relative" asChild>
-              <Link to="/cart">
-                <ShoppingBag className="h-5 w-5" />
+            {/* Mobile Menu Button */}
+            <div className="flex items-center md:hidden space-x-2">
+              <Button variant="ghost" size="icon" className="relative">
+                <User className="h-5 w-5" />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">
                     {totalItems}
                   </span>
                 )}
-              </Link>
-            </Button>
-            
-            <button 
-              onClick={toggleMenu}
-              className="hover:opacity-80 transition-opacity"
-              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+              </Button>
+              <button 
+                onClick={toggleMenu}
+                className="hover:opacity-80 transition-opacity"
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -188,6 +217,28 @@ function Header() {
               Home
             </NavLink>
             <NavLink 
+              to="/about"
+              className={({ isActive }) => 
+                `py-2 text-base font-medium transition-colors hover:text-eco ${
+                  isActive ? "text-eco" : "text-foreground"
+                }`
+              }
+              onClick={closeMenu}
+            >
+              About
+            </NavLink>
+            <NavLink 
+              to="/advertisement"
+              className={({ isActive }) => 
+                `py-2 text-base font-medium transition-colors hover:text-eco ${
+                  isActive ? "text-eco" : "text-foreground"
+                }`
+              }
+              onClick={closeMenu}
+            >
+              Advertisement
+            </NavLink>
+            <NavLink 
               to="/retail" 
               className={({ isActive }) => 
                 `py-2 text-base font-medium transition-colors hover:text-eco ${
@@ -219,28 +270,6 @@ function Header() {
               onClick={closeMenu}
             >
               Blog
-            </NavLink>
-            <NavLink 
-              to="/about"
-              className={({ isActive }) => 
-                `py-2 text-base font-medium transition-colors hover:text-eco ${
-                  isActive ? "text-eco" : "text-foreground"
-                }`
-              }
-              onClick={closeMenu}
-            >
-              About
-            </NavLink>
-            <NavLink 
-              to="/advertisement" // New Advertisement link
-              className={({ isActive }) => 
-                `py-2 text-base font-medium transition-colors hover:text-eco ${
-                  isActive ? "text-eco" : "text-foreground"
-                }`
-              }
-              onClick={closeMenu}
-            >
-              Advertisement
             </NavLink>
             <NavLink 
               to="/contact" 
@@ -265,6 +294,18 @@ function Header() {
                       </Link>
                     </Button>
                   )}
+                  <Button variant="ghost" className="justify-start" asChild>
+                    <Link to="/profile" onClick={closeMenu}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" className="justify-start" asChild>
+                    <Link to="/cart" onClick={closeMenu}>
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      Cart {totalItems > 0 && `(${totalItems})`}
+                    </Link>
+                  </Button>
                   <Button variant="outline" onClick={handleLogout}>
                     Logout
                   </Button>
