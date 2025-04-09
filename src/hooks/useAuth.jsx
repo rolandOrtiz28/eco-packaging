@@ -1,3 +1,4 @@
+// useAuth.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { api } from "@/utils/api";
@@ -9,7 +10,6 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [justLoggedIn, setJustLoggedIn] = useState(false); // New flag to track login
   const navigate = useNavigate();
 
   const fetchUser = async () => {
@@ -24,15 +24,10 @@ export function AuthProvider({ children }) {
       console.log("AuthProvider: fetchUser set state - isAuthenticated:", true, "isAdmin:", userData.role === "admin");
     } catch (error) {
       console.log("AuthProvider: fetchUser failed:", error.message);
-      // Only reset state if not already authenticated or just logged in
-      if (!isAuthenticated && !justLoggedIn) {
-        setUser(null);
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-        console.log("AuthProvider: fetchUser set state - isAuthenticated:", false, "isAdmin:", false);
-      } else {
-        console.log("AuthProvider: fetchUser failed but preserving state - isAuthenticated:", isAuthenticated, "isAdmin:", isAdmin);
-      }
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+      console.log("AuthProvider: fetchUser set state - isAuthenticated:", false, "isAdmin:", false);
     } finally {
       setLoading(false);
       console.log("AuthProvider: fetchUser loading set to false");
@@ -40,24 +35,21 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    if (justLoggedIn) {
-      // Skip initial fetch if the user just logged in
-      setLoading(false);
-      return;
-    }
     fetchUser();
-  }, [justLoggedIn]);
+  }, []); // Always fetch user on mount
 
   const login = async (credentials) => {
     try {
+      setLoading(true); // Set loading to true during login
       const response = await api.post('/login', credentials);
       const userData = response.data;
       setUser(userData);
       setIsAuthenticated(true);
       setIsAdmin(userData.role === "admin");
-      setJustLoggedIn(true); // Set flag to indicate a login occurred
+      setLoading(false);
       return userData;
     } catch (error) {
+      setLoading(false);
       throw error;
     }
   };
@@ -65,17 +57,19 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     console.log("AuthProvider: logout called");
     try {
+      setLoading(true); // Set loading to true during logout
       await api.post('/logout');
       setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
-      setJustLoggedIn(false);
-      console.log("AuthProvider: logout set state - isAuthenticated:", false, "isAdmin:", false);
       navigate("/login");
     } catch (error) {
       console.error('AuthProvider: Error during logout:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <AuthContext.Provider value={{ user, setUser, isAuthenticated, isAdmin, login, logout, loading }}>
       {children}

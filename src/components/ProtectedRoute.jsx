@@ -1,12 +1,29 @@
+// ProtectedRoute.jsx
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 function ProtectedRoute({ requireAdmin = false, children }) {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, loading } = useAuth();
   const location = useLocation();
 
-  console.log("ProtectedRoute: isAuthenticated =", isAuthenticated, "isAdmin =", isAdmin, "requireAdmin =", requireAdmin);
+  console.log(
+    "ProtectedRoute: loading =",
+    loading,
+    "isAuthenticated =",
+    isAuthenticated,
+    "isAdmin =",
+    isAdmin,
+    "requireAdmin =",
+    requireAdmin
+  );
 
+  // Wait for loading to resolve before making a decision
+  if (loading) {
+    console.log("ProtectedRoute: Still loading auth state, rendering loading UI");
+    return <div>Loading...</div>;
+  }
+
+  // Once loading is false, check authentication and admin status
   if (!isAuthenticated) {
     console.log("ProtectedRoute: Not authenticated, redirecting to /login");
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -18,7 +35,7 @@ function ProtectedRoute({ requireAdmin = false, children }) {
   }
 
   console.log("ProtectedRoute: Rendering children");
-  return children; // Render the children prop directly
+  return children;
 }
 
 export default ProtectedRoute;

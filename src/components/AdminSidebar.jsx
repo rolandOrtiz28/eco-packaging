@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { BarChart, User, Users, FileText, Settings, LogOut } from "lucide-react";
+import { BarChart, User, Users, FileText, Settings, LogOut, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -98,6 +98,19 @@ function AdminSidebar() {
         >
           <Settings className="mr-3 h-5 w-5" />
           Settings
+        </NavLink>
+        <NavLink
+          to="/admin/chat"
+          className={({ isActive }) =>
+            `flex items-center px-4 py-3 text-sm rounded-md transition-colors ${
+              isActive
+                ? "bg-eco/10 text-eco font-medium"
+                : "text-gray-700 hover:bg-gray-100"
+            }`
+          }
+        >
+        <MessageSquare className="mr-2 h-4 w-4" />
+          Chat
         </NavLink>
       </nav>
 

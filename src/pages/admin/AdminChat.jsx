@@ -1,3 +1,4 @@
+// AdminChat.jsx
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,17 @@ import { submitChat } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import io from 'socket.io-client';
 import axios from 'axios';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+import { FiSend, FiUser, FiMessageSquare, FiAlertCircle } from "react-icons/fi";
 
 function AdminChat() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -13,9 +25,10 @@ function AdminChat() {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [notifications, setNotifications] = useState({});
+  const [isConnectedToChat, setIsConnectedToChat] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, isAdmin, loading } = useAuth();
 
   const API_BASE_URL =
     window.location.hostname === "localhost"
@@ -23,7 +36,6 @@ function AdminChat() {
       : "https://your-production-url.com";
 
   useEffect(() => {
-    // Initialize Socket.IO connection
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
       reconnection: true,
@@ -32,7 +44,6 @@ function AdminChat() {
     });
 
     socketRef.current.on('connect', () => {
-      console.log('Admin connected:', socketRef.current.id);
       if (isAdminLoggedIn) {
         socketRef.current.emit('admin-login');
       }
@@ -42,7 +53,6 @@ function AdminChat() {
     });
 
     socketRef.current.on('reconnect', () => {
-      console.log('Admin reconnected:', socketRef.current.id);
       if (isAdminLoggedIn) {
         socketRef.current.emit('admin-login');
       }
@@ -52,22 +62,44 @@ function AdminChat() {
     });
 
     socketRef.current.on('reconnect_error', () => {
-      console.log('Admin reconnection failed');
-      toast.error("Connection lost. Please try again later.");
+      toast.error("Connection lost. Trying to reconnect...");
     });
 
-    socketRef.current.on('chat-request', (data) => {
-      console.log('Chat request received:', data);
+    socketRef.current.on('new-chat', (data) => {
       setRegisteredChats((prev) => {
         if (prev.some((chat) => chat.userId === data.userId)) {
           return prev;
         }
-        return [...prev, data];
+        return [...prev, {
+          userId: data.userId,
+          name: data.name,
+          email: data.email,
+          socketId: data.socketId,
+        }];
       });
+      toast.info(`New chat request from ${data.name}`);
+    });
+
+    socketRef.current.on('chat-request', (data) => {
+      setRegisteredChats((prev) => {
+        if (prev.some((chat) => chat.userId === data.userId)) {
+          return prev;
+        }
+        return [...prev, {
+          userId: data.userId,
+          name: data.name,
+          email: data.email,
+          socketId: data.socketId,
+        }];
+      });
+      setNotifications((prev) => ({
+        ...prev,
+        [data.userId]: (prev[data.userId] || 0) + 1,
+      }));
+      toast.info(`Chat request from ${data.name}`);
     });
 
     socketRef.current.on('chat-notification', (data) => {
-      console.log('Chat notification received:', data);
       setNotifications((prev) => ({
         ...prev,
         [data.userId]: (prev[data.userId] || 0) + 1,
@@ -75,22 +107,38 @@ function AdminChat() {
     });
 
     socketRef.current.on('message', (data) => {
-      console.log('Message from user:', data);
-      if (data.sender === "user") {
-        setMessages((prev) => {
-          if (prev.some((msg) => msg.text === data.text && msg.timestamp === data.timestamp)) {
-            return prev;
-          }
-          return [
+      if (data.sender === "user" || data.sender === "bot") {
+        if (activeChat && data.userId === activeChat.userId) {
+          setMessages((prev) => {
+            // Normalize timestamps to seconds for comparison
+            const normalizeTimestamp = (ts) => new Date(ts).setMilliseconds(0);
+            const isDuplicate = prev.some(
+              (msg) =>
+                msg.text === data.text &&
+                msg.sender === data.sender &&
+                normalizeTimestamp(msg.timestamp) === normalizeTimestamp(data.timestamp || new Date().toISOString())
+            );
+            if (isDuplicate) {
+              return prev;
+            }
+            return [
+              ...prev,
+              {
+                id: prev.length + 1,
+                text: data.text,
+                sender: data.sender,
+                name: data.name || (data.sender === "user" ? activeChat.name : "EcoBuddy"),
+                timestamp: data.timestamp || new Date().toISOString(),
+              },
+            ];
+          });
+        } else {
+          setNotifications((prev) => ({
             ...prev,
-            {
-              id: prev.length + 1,
-              text: data.text,
-              sender: data.sender,
-              timestamp: data.timestamp || new Date().toISOString(),
-            },
-          ];
-        });
+            [data.userId]: (prev[data.userId] || 0) + 1,
+          }));
+          toast.info(`New message from ${data.sender === "user" ? registeredChats.find(c => c.userId === data.userId)?.name || 'user' : 'EcoBuddy'}`);
+        }
       }
     });
 
@@ -100,14 +148,16 @@ function AdminChat() {
   }, [isAdminLoggedIn, activeChat]);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (loading) return;
 
-    if (isAuthenticated && user && user.role === 'admin') {
+    if (isAuthenticated && user && isAdmin) {
       setIsAdminLoggedIn(true);
       socketRef.current.emit('admin-login');
       loadRegisteredChats();
+    } else {
+      setIsAdminLoggedIn(false);
     }
-  }, [authLoading, isAuthenticated, user]);
+  }, [loading, isAuthenticated, user, isAdmin]);
 
   const loadRegisteredChats = async () => {
     try {
@@ -125,13 +175,12 @@ function AdminChat() {
   };
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleOpenChat = async (chat) => {
     setActiveChat(chat);
+    setIsConnectedToChat(false);
     setNotifications((prev) => {
       const newNotifications = { ...prev };
       delete newNotifications[chat.userId];
@@ -146,6 +195,7 @@ function AdminChat() {
       const history = response.data.messages || [];
       const formattedHistory = history.map((msg) => ({
         ...msg,
+        name: msg.sender === "admin" ? "Admin" : (msg.sender === "user" ? chat.name : "EcoBuddy"),
         timestamp: msg.timestamp ? new Date(msg.timestamp).toISOString() : new Date().toISOString(),
       }));
       setMessages(formattedHistory);
@@ -156,10 +206,16 @@ function AdminChat() {
     }
 
     socketRef.current.emit('join-room', chat.userId);
+  };
+
+  const handleConnectToChat = () => {
+    if (!activeChat) return;
+
     socketRef.current.emit('accept-chat', {
-      userId: chat.userId,
-      userSocketId: chat.socketId,
+      userId: activeChat.userId,
     });
+    setIsConnectedToChat(true);
+    toast.success(`Connected to ${activeChat.name}'s chat`);
   };
 
   const handleSendMessage = async () => {
@@ -169,6 +225,7 @@ function AdminChat() {
       id: messages.length + 1,
       text: inputValue,
       sender: "admin",
+      name: "Admin",
       timestamp: new Date().toISOString(),
     };
 
@@ -177,6 +234,7 @@ function AdminChat() {
       userId: activeChat.userId,
       message: inputValue,
       sender: "admin",
+      name: "Admin",
       timestamp: adminMessage.timestamp,
     });
 
@@ -201,66 +259,141 @@ function AdminChat() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-eco"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Admin Chat Interface</h1>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-80 border-r bg-white">
+        <div className="p-4 border-b">
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <FiMessageSquare className="text-eco" />
+            Admin Chat
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {registeredChats.length} active chats
+          </p>
+        </div>
 
-      {!isAdminLoggedIn ? (
-        <p>You must be logged in as an admin to access this interface.</p>
-      ) : (
-        <>
-          <h2 className="text-xl font-semibold mb-2">Registered Chats</h2>
-          {registeredChats.length === 0 ? (
-            <p>No chats registered yet.</p>
-          ) : (
-            <ul className="mb-4">
-              {registeredChats.map((chat) => (
-                <li key={chat.userId} className="mb-2 p-2 border rounded flex justify-between items-center">
+        {!isAdminLoggedIn ? (
+          <div className="p-4 text-center">
+            <p className="text-muted-foreground">Please login as admin</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[calc(100vh-80px)]">
+            {registeredChats.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">
+                No active chats
+              </div>
+            ) : (
+              <div className="divide-y">
+                {registeredChats.map((chat) => (
+                  <div
+                    key={chat.userId}
+                    className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${
+                      activeChat?.userId === chat.userId ? "bg-gray-100" : ""
+                    }`}
+                    onClick={() => handleOpenChat(chat)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback>
+                            {chat.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{chat.name}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                            {chat.email}
+                          </p>
+                        </div>
+                      </div>
+                      {notifications[chat.userId] > 0 && (
+                        <Badge variant="destructive">
+                          {notifications[chat.userId]}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {!activeChat ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center max-w-md p-6">
+              <FiMessageSquare className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-lg font-medium text-gray-900">
+                No chat selected
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Select a chat from the sidebar to start messaging
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Chat Header */}
+            <div className="border-b p-4 bg-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback>
+                      {activeChat.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
-                    <p><strong>User:</strong> {chat.name} ({chat.email})</p>
+                    <h2 className="font-semibold">{activeChat.name}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {activeChat.email}
+                    </p>
                   </div>
-                  <div className="flex items-center">
-                    {notifications[chat.userId] > 0 && (
-                      <span className="bg-red-500 text-white rounded-full px-2 py-1 text-xs mr-2">
-                        {notifications[chat.userId]} new
-                      </span>
-                    )}
-                    <Button
-                      onClick={() => handleOpenChat(chat)}
-                      className="bg-eco hover:bg-eco-dark"
-                    >
-                      Open Chat
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                </div>
+                {!isConnectedToChat && (
+                  <Button
+                    onClick={handleConnectToChat}
+                    className="bg-eco hover:bg-eco-dark"
+                  >
+                    Connect to Chat
+                  </Button>
+                )}
+              </div>
+            </div>
 
-          {activeChat && (
-            <div className="border rounded p-4">
-              <h2 className="text-xl font-semibold mb-2">
-                Chatting with {activeChat.name} ({activeChat.email})
-              </h2>
-              <div className="h-64 overflow-y-auto bg-slate-50 p-2 mb-4">
+            {/* Messages Area */}
+            <ScrollArea className="flex-1 p-4 bg-gray-50">
+              <div className="space-y-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`mb-2 flex ${
+                    className={`flex ${
                       message.sender === "admin" ? "justify-end" : "justify-start"
                     }`}
                   >
                     <div
-                      className={`rounded-lg p-2 max-w-[80%] ${
+                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
                         message.sender === "admin"
-                          ? "bg-eco text-white"
-                          : "bg-white shadow-sm border"
+                          ? "bg-eco text-white rounded-tr-none"
+                          : "bg-white border rounded-tl-none"
                       }`}
                     >
-                      <p className="text-sm">{message.text}</p>
+                      <p className="text-xs font-semibold">{message.name}</p>
+                      <p>{message.text}</p>
                       <p
-                        className={`text-xs mt-1 ${
-                          message.sender === "admin" ? "text-white/70" : "text-muted-foreground"
+                        className={`text-xs mt-1 text-right ${
+                          message.sender === "admin" ? "text-white/80" : "text-muted-foreground"
                         }`}
                       >
                         {new Date(message.timestamp).toLocaleTimeString([], {
@@ -273,26 +406,37 @@ function AdminChat() {
                 ))}
                 <div ref={messagesEndRef} />
               </div>
-              <div className="flex">
+            </ScrollArea>
+
+            {/* Message Input */}
+            <div className="border-t p-4 bg-white">
+              <div className="flex gap-2">
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message..."
-                  className="flex-grow"
+                  className="flex-1"
+                  disabled={!isConnectedToChat}
                 />
                 <Button
                   onClick={handleSendMessage}
-                  className="ml-2 bg-eco hover:bg-eco-dark"
-                  disabled={!inputValue.trim()}
+                  className="bg-eco hover:bg-eco-dark"
+                  disabled={!inputValue.trim() || !isConnectedToChat}
                 >
-                  Send
+                  <FiSend className="h-4 w-4" />
                 </Button>
               </div>
+              {!isConnectedToChat && (
+                <div className="mt-2 flex items-center text-sm text-yellow-600">
+                  <FiAlertCircle className="mr-1" />
+                  <span>You need to connect to the chat before sending messages</span>
+                </div>
+              )}
             </div>
-          )}
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

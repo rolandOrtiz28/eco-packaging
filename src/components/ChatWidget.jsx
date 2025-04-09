@@ -13,10 +13,13 @@ function ChatWidget() {
   const [chatState, setChatState] = useState(() => {
     return localStorage.getItem("chatState") || "closed";
   });
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    const savedMessages = localStorage.getItem("chatMessages");
+    return savedMessages ? JSON.parse(savedMessages) : [];
+  });
   const [inputValue, setInputValue] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(() => localStorage.getItem("chatName") || "");
+  const [email, setEmail] = useState(() => localStorage.getItem("chatEmail") || "");
   const [awaitingHuman, setAwaitingHuman] = useState(false);
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [followUpEmail, setFollowUpEmail] = useState("");
@@ -27,6 +30,7 @@ function ChatWidget() {
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const adminTimeoutRef = useRef(null);
+  const messageIdCounter = useRef(0);
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
 
   const API_BASE_URL =
@@ -34,43 +38,55 @@ function ChatWidget() {
       ? "http://localhost:3000"
       : "https://your-production-url.com";
 
-  // Use a counter for unique message IDs
-  let messageIdCounter = 0;
-
   const initialMessage = {
-    id: messageIdCounter++,
+    id: messageIdCounter.current++,
     text: "Hi there! 👋 I'm EcoBuddy, your AI assistant. How can I help you today?",
     sender: "bot",
+    name: "EcoBuddy",
     timestamp: new Date().toISOString(),
   };
-
+  
   const infoRequestMessage = {
-    id: messageIdCounter++,
+    id: messageIdCounter.current++,
     text: "Since you're not logged in, please provide your name and email to continue.",
     sender: "bot",
+    name: "EcoBuddy",
     timestamp: new Date().toISOString(),
   };
-
+  
   const timeoutMessage = {
-    id: messageIdCounter++,
+    id: messageIdCounter.current++,
     text: "Sorry, it looks like our team is currently unavailable. Please provide your email, and we’ll follow up with you soon!",
     sender: "bot",
+    name: "EcoBuddy",
     timestamp: new Date().toISOString(),
   };
-
+  
   const thankYouMessage = {
-    id: messageIdCounter++,
+    id: messageIdCounter.current++,
     text: "Thank you! We’ll follow up with you soon via email.",
     sender: "bot",
+    name: "EcoBuddy",
+    timestamp: new Date().toISOString(),
+  };
+  
+  const inactivityMessage = {
+    id: messageIdCounter.current++,
+    text: "You’ve been disconnected due to inactivity. Type 'talk to human' to reconnect.",
+    sender: "bot",
+    name: "EcoBuddy",
     timestamp: new Date().toISOString(),
   };
 
-  const inactivityMessage = {
-    id: messageIdCounter++,
-    text: "You’ve been disconnected due to inactivity. Type 'talk to human' to reconnect.",
-    sender: "bot",
-    timestamp: new Date().toISOString(),
-  };
+  useEffect(() => {
+    localStorage.setItem("chatMessages", JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    // Save name and email to localStorage whenever they change
+    if (name) localStorage.setItem("chatName", name);
+    if (email) localStorage.setItem("chatEmail", email);
+  }, [name, email]);
 
   useEffect(() => {
     // Initialize Socket.IO connection
@@ -109,7 +125,7 @@ function ChatWidget() {
       setMessages((prev) => [
         ...prev,
         {
-          id: messageIdCounter++,
+          id: messageIdCounter.current++,
           text: data.message,
           sender: "bot",
           timestamp: new Date().toISOString(),
@@ -124,7 +140,7 @@ function ChatWidget() {
       setMessages((prev) => [
         ...prev,
         {
-          id: messageIdCounter++,
+          id: messageIdCounter.current++,
           text: data.message,
           sender: "bot",
           timestamp: new Date().toISOString(),
@@ -139,7 +155,7 @@ function ChatWidget() {
       setMessages((prev) => [
         ...prev,
         {
-          id: messageIdCounter++,
+          id: messageIdCounter.current++,
           text: data.message,
           sender: "bot",
           timestamp: new Date().toISOString(),
@@ -150,7 +166,7 @@ function ChatWidget() {
     socketRef.current.on('inactivity-disconnect', (data) => {
       console.log('Received inactivity-disconnect event:', data);
       setIsHumanConnected(false);
-      setAwaitingHuman(false); // Ensure awaitingHuman is also reset
+      setAwaitingHuman(false);
       setMessages((prev) => {
         if (prev.some(msg => msg.text === data.message && msg.sender === "bot")) {
           return prev;
@@ -158,7 +174,7 @@ function ChatWidget() {
         return [
           ...prev,
           {
-            id: messageIdCounter++,
+            id: messageIdCounter.current++,
             text: data.message,
             sender: "bot",
             timestamp: new Date().toISOString(),
@@ -176,16 +192,28 @@ function ChatWidget() {
         return [
           ...prev,
           {
-            id: messageIdCounter++,
+            id: messageIdCounter.current++,
             text: data.text,
             sender: data.sender,
+            name: data.sender === "admin" ? "Admin" : (data.sender === "user" ? name : "EcoBuddy"),
             timestamp: data.timestamp || new Date().toISOString(),
           },
         ];
       });
     });
 
+    // Add a method to leave a room
+    socketRef.current.leaveRoom = (roomId) => {
+      if (roomId) {
+        console.log(`Leaving room for userId: ${roomId}`);
+        socketRef.current.emit('leave-room', roomId);
+      }
+    };
+
     return () => {
+      socketRef.current.off('connect');
+      socketRef.current.off('reconnect');
+      socketRef.current.off('reconnect_error');
       socketRef.current.off('awaiting-human');
       socketRef.current.off('no-admins');
       socketRef.current.off('human-connected');
@@ -212,14 +240,19 @@ function ChatWidget() {
   useEffect(() => {
     if (chatState === "open") {
       if (!isAuthenticated) {
-        setMessages([initialMessage, infoRequestMessage]);
-        setShowInfoForm(true);
+        if (!name || !email) {
+          setMessages((prev) => prev.length === 0 ? [initialMessage, infoRequestMessage] : prev);
+          setShowInfoForm(true);
+        } else {
+          setMessages((prev) => prev.length === 0 ? [initialMessage] : prev);
+          setShowInfoForm(false);
+        }
       } else {
-        setMessages([initialMessage]);
+        setMessages((prev) => prev.length === 0 ? [initialMessage] : prev);
         setShowInfoForm(false);
       }
     }
-  }, [chatState, isAuthenticated, isLoadingUser]);
+  }, [chatState, isAuthenticated, isLoadingUser, name, email]);
 
   useEffect(() => {
     if (isAuthenticated && user && email && email !== user.email) {
@@ -231,11 +264,18 @@ function ChatWidget() {
           }, { withCredentials: true });
           setEmail(user.email);
           setName(user.name);
-          toast.success("Chat session updated with your account information.");
+          setUserId(null); // Reset userId to ensure a new session
+          socketRef.current.leaveRoom(userId); // Leave the old room
           setMessages([initialMessage]);
+          toast.success("Chat session updated with your account information.");
         } catch (error) {
           console.error("Error updating chat session email:", error);
-          toast.error("Failed to update chat session with your account information. Please continue with the current session.");
+          setEmail(user.email);
+          setName(user.name);
+          setUserId(null); // Reset userId to start fresh
+          socketRef.current.leaveRoom(userId); // Leave the old room
+          setMessages([initialMessage]);
+          toast.error("Failed to update chat session with your account information. Starting a new session.");
         }
       };
       updateChatSession();
@@ -271,6 +311,8 @@ function ChatWidget() {
   useEffect(() => {
     // Reset chat on logout
     if (!isAuthenticated && !authLoading) {
+      setMessages([]); // Clear messages on logout
+      localStorage.removeItem("chatMessages"); // Clear from localStorage
       closeChat();
     }
   }, [isAuthenticated, authLoading]);
@@ -285,14 +327,12 @@ function ChatWidget() {
 
   const closeChat = () => {
     setChatState("closed");
-    setMessages([]);
     setInputValue("");
     setAwaitingHuman(false);
     setShowFollowUpForm(false);
     setIsHumanConnected(false);
     setUserId(null);
-    setName("");
-    setEmail("");
+    socketRef.current.leaveRoom(userId); // Leave the current room on close
     setShowInfoForm(false);
     if (adminTimeoutRef.current) {
       clearTimeout(adminTimeoutRef.current);
@@ -329,96 +369,97 @@ function ChatWidget() {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-
+  
     if (!isAuthenticated && (!name || !email)) {
       toast.error("Please provide your name and email before sending a message.");
       return;
     }
-
+  
     const userMessage = {
-      id: messageIdCounter++,
+      id: messageIdCounter.current++,
       text: inputValue,
       sender: "user",
+      name: name || "User",
       timestamp: new Date().toISOString(),
     };
-
-    setMessages((prev) => [...prev, userMessage]);
+  
     setInputValue("");
-
+  
     console.log(`Sending message: ${inputValue}, isHumanConnected: ${isHumanConnected}, userId: ${userId}`);
-
+  
     if (isHumanConnected) {
       socketRef.current.emit('user-message', {
         userId,
         message: inputValue,
         timestamp: userMessage.timestamp,
       });
-      return;
-    }
-
-    try {
-      const response = await submitChat({
-        name,
-        email,
-        message: inputValue,
-      });
-
-      if (!response) {
-        throw new Error('No response from server');
-      }
-
-      if (response.awaitingHuman) {
-        setUserId(response.userId);
-        socketRef.current.emit('join-room', response.userId);
-        socketRef.current.emit('request-human', {
-          userId: response.userId,
+    } else {
+      setMessages((prev) => [...prev, userMessage]); // Add user message only
+  
+      try {
+        const response = await submitChat({
           name,
           email,
           message: inputValue,
         });
-        setAwaitingHuman(true);
-      } else {
-        const botMessage = {
-          id: messageIdCounter++,
-          text: response.message,
-          sender: "bot",
-          timestamp: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, botMessage]);
-        setUserId(response.userId);
+  
+        if (!response) {
+          throw new Error('No response from server');
+        }
+  
+        if (response.awaitingHuman) {
+          setUserId(response.userId);
+          socketRef.current.emit('join-room', response.userId);
+          socketRef.current.emit('request-human', {
+            userId: response.userId,
+            name,
+            email,
+            message: inputValue,
+          });
+          setAwaitingHuman(true);
+        } else {
+          setUserId(response.userId);
+          socketRef.current.emit('join-room', response.userId); // Join the new room immediately
+        }
+      } catch (error) {
+        console.error("Error submitting chat:", error);
+        toast.error("Failed to send message. Please try again.");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: messageIdCounter.current++,
+            text: "Sorry, there was an error processing your message. Please try again.",
+            sender: "bot",
+            name: "EcoBuddy",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
       }
-    } catch (error) {
-      console.error("Error submitting chat:", error);
-      toast.error("Failed to send message. Please try again.");
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: messageIdCounter++,
-          text: "Sorry, there was an error processing your message. Please try again.",
-          sender: "bot",
-          timestamp: new Date().toISOString(),
-        },
-      ]);
     }
   };
 
   const handleFollowUpSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!followUpEmail.trim() || !followUpEmail.includes('@') || !followUpEmail.includes('.')) {
       toast.error("Please provide a valid email address");
       return;
     }
-
+  
     try {
       await submitChat({
         name,
         email: followUpEmail,
         message: 'Follow-up email request after admin unavailability',
       });
-      setMessages((prev) => [...prev, thankYouMessage]);
+      setMessages((prev) => {
+        console.log('Adding thank you message to state:', thankYouMessage);
+        return [...prev, thankYouMessage];
+      });
       setShowFollowUpForm(false);
-      setTimeout(closeChat, 2000);
+      setAwaitingHuman(false); // Reset to allow AI chat
+      setIsHumanConnected(false); // Reset to allow AI chat
+      // Do not close the chat; let the user continue with the AI
     } catch (error) {
       console.error("Error submitting follow-up email:", error);
       toast.error("Failed to submit email. Please try again.");
@@ -506,6 +547,13 @@ function ChatWidget() {
                           : "bg-white shadow-sm border"
                       }`}
                     >
+                      <p
+                        className={`text-xs font-semibold ${
+                          message.sender === "user" ? "text-white/70" : "text-muted-foreground"
+                        }`}
+                      >
+                        {message.name}
+                      </p>
                       <p className="text-sm">{message.text}</p>
                       <p
                         className={`text-xs mt-1 ${
