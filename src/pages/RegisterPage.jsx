@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // Add useEffect
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/components/ui/use-toast";
 import { register as registerUser } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
+import { Eye, EyeOff } from "lucide-react";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -31,8 +32,10 @@ const registerSchema = z.object({
 const RegisterPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { setUser, isAuthenticated, user } = useAuth(); // Add isAuthenticated and user
+  const { setUser, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -65,19 +68,14 @@ const RegisterPage = () => {
       });
       setUser(newUser);
       toast({
-        title: "Registration successful",
+        title: "Registration Successful",
         description: "Your account has been created",
       });
-      // Redirect based on user role
-      if (newUser.role === "admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/");
-      }
+      navigate("/");
     } catch (error) {
       toast({
-        title: "Registration failed",
-        description: "Please try again with different credentials",
+        title: "Registration Failed",
+        description: error.response?.data?.error || "Please try again with different credentials",
         variant: "destructive",
       });
     } finally {
@@ -123,19 +121,32 @@ const RegisterPage = () => {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+           <FormField
+  control={form.control}
+  name="password"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Password</FormLabel>
+      <FormControl>
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="••••••"
+            {...field}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
               <FormField
                 control={form.control}
                 name="confirmPassword"

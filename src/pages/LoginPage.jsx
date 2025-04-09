@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"; // Add useEffect
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,77 +11,42 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser, isAuthenticated } = useAuth(); // Add isAuthenticated
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const location = useLocation(); // Add useLocation to check the current route
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated, but only if on the login page
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && location.pathname === "/login") {
       toast({
         title: "Already Logged In",
         description: "You are already logged in. Redirecting to homepage.",
       });
       navigate("/");
     }
-  }, [isAuthenticated, navigate, toast]);
+  }, [isAuthenticated, navigate, toast, location.pathname]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          if (email === "admin@example.com" && password === "admin123") {
-            resolve({
-              success: true,
-              user: {
-                id: 1,
-                name: "Admin User",
-                email: "admin@example.com",
-                role: "admin"
-              }
-            });
-          } else if (email === "user@example.com" && password === "user123") {
-            resolve({
-              success: true,
-              user: {
-                id: 2,
-                name: "Regular User",
-                email: "user@example.com",
-                role: "user"
-              }
-            });
-          } else {
-            resolve({ success: false });
-          }
-        }, 1000);
+      const user = await login({ email, password });
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${user.name}!`,
       });
-      
-      if (response.success && response.user) {
-        setUser(response.user);
-        toast({
-          title: "Login Successful",
-          description: `Welcome back, ${response.user.name}!`,
-        });
-        if (response.user.role === "admin") {
-          navigate("/admin/dashboard");
-        } else {
-          navigate("/");
-        }
+      if (user.role === "admin") {
+        navigate("/admin/dashboard");
       } else {
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-        });
+        navigate("/");
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Login Error",
-        description: "An error occurred during login. Please try again.",
+        title: "Login Failed",
+        description: error.response?.data?.error || "An error occurred during login. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -142,7 +107,7 @@ const LoginPage = () => {
               Demo credentials:
             </div>
             <div className="text-xs">
-              Admin: admin@example.com / admin123
+              Admin: admin@example.com / your-secure-password
             </div>
             <div className="text-xs">
               User: user@example.com / user123

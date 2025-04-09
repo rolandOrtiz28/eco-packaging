@@ -19,12 +19,12 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!user) {
-        setError("User not authenticated");
+      if (!user || !user.id) {
+        setError("User not authenticated or missing user ID");
         setIsLoading(false);
         return;
       }
-
+  
       setIsLoading(true);
       try {
         const profileData = await getUserProfile(user.id);
@@ -36,7 +36,7 @@ const ProfilePage = () => {
         setIsLoading(false);
       }
     };
-
+  
     fetchUserProfile();
   }, [user]);
 

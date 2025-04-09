@@ -1,53 +1,83 @@
-// src/hooks/useAuth.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import { api } from "@/utils/api";
 
 const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [justLoggedIn, setJustLoggedIn] = useState(false); // New flag to track login
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    console.log("Stored user from localStorage:", storedUser); // Log what’s in localStorage
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        console.log("Parsed user:", parsedUser); // Log the parsed user
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user from localStorage:', error);
-        localStorage.removeItem('user');
+
+  const fetchUser = async () => {
+    console.log("AuthProvider: fetchUser called");
+    try {
+      const response = await api.get('/user');
+      console.log("AuthProvider: fetchUser response:", response.data);
+      const userData = response.data;
+      setUser(userData);
+      setIsAuthenticated(true);
+      setIsAdmin(userData.role === "admin");
+      console.log("AuthProvider: fetchUser set state - isAuthenticated:", true, "isAdmin:", userData.role === "admin");
+    } catch (error) {
+      console.log("AuthProvider: fetchUser failed:", error.message);
+      // Only reset state if not already authenticated or just logged in
+      if (!isAuthenticated && !justLoggedIn) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsAdmin(false);
+        console.log("AuthProvider: fetchUser set state - isAuthenticated:", false, "isAdmin:", false);
+      } else {
+        console.log("AuthProvider: fetchUser failed but preserving state - isAuthenticated:", isAuthenticated, "isAdmin:", isAdmin);
       }
+    } finally {
+      setLoading(false);
+      console.log("AuthProvider: fetchUser loading set to false");
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
+    if (justLoggedIn) {
+      // Skip initial fetch if the user just logged in
+      setLoading(false);
+      return;
     }
-  }, [user]);
+    fetchUser();
+  }, [justLoggedIn]);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-    navigate("/"); // Redirect to home page after login
+  const login = async (credentials) => {
+    try {
+      const response = await api.post('/login', credentials);
+      const userData = response.data;
+      setUser(userData);
+      setIsAuthenticated(true);
+      setIsAdmin(userData.role === "admin");
+      setJustLoggedIn(true); // Set flag to indicate a login occurred
+      return userData;
+    } catch (error) {
+      throw error;
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    navigate("/login"); // Redirect to login page after logout
+  const logout = async () => {
+    console.log("AuthProvider: logout called");
+    try {
+      await api.post('/logout');
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+      setJustLoggedIn(false);
+      console.log("AuthProvider: logout set state - isAuthenticated:", false, "isAdmin:", false);
+      navigate("/login");
+    } catch (error) {
+      console.error('AuthProvider: Error during logout:', error);
+    }
   };
-
-  const isAuthenticated = !!user;
-  const isAdmin = isAuthenticated && user?.role === 'admin';
-
   return (
-    <AuthContext.Provider value={{ user, setUser, isAuthenticated, isAdmin, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, isAuthenticated, isAdmin, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

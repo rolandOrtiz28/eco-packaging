@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Menu, X, User, ShoppingBag, LogOut } from "lucide-react";
+import { Menu, X, User, ShoppingBag, LogOut, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
@@ -18,6 +18,10 @@ function Header() {
   const { isAuthenticated, isAdmin, logout } = useAuth();
   const { cartItems } = useCart();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log('Header: isAuthenticated =', isAuthenticated, 'isAdmin =', isAdmin);
+  }, [isAuthenticated, isAdmin]);
   
   const totalItems = cartItems.length;
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -133,50 +137,58 @@ function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {isAuthenticated ? (
-                    <>
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                      {isAdmin && (
-                        <DropdownMenuItem asChild>
-                          <Link to="/admin/dashboard">
-                            <User className="mr-2 h-4 w-4" />
-                            Dashboard
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem asChild>
-                        <Link to="/profile">
-                          <User className="mr-2 h-4 w-4" />
-                          Profile
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/cart">
-                          <ShoppingBag className="mr-2 h-4 w-4" />
-                          Cart {totalItems > 0 && `(${totalItems})`}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/login">
-                          Login
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/register">
-                          Register
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
+  {isAuthenticated ? (
+    <>
+      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+      {isAdmin && (
+        <>
+          <DropdownMenuItem asChild>
+            <Link to="/admin/dashboard">
+              <User className="mr-2 h-4 w-4" />
+              Dashboard
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/admin/chat">
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Chat
+            </Link>
+          </DropdownMenuItem>
+        </>
+      )}
+      <DropdownMenuItem asChild>
+        <Link to="/profile">
+          <User className="mr-2 h-4 w-4" />
+          Profile
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link to="/cart">
+          <ShoppingBag className="mr-2 h-4 w-4" />
+          Cart {totalItems > 0 && `(${totalItems})`}
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={handleLogout}>
+        <LogOut className="mr-2 h-4 w-4" />
+        Logout
+      </DropdownMenuItem>
+    </>
+  ) : (
+    <>
+      <DropdownMenuItem asChild>
+        <Link to="/login">
+          Login
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link to="/register">
+          Register
+        </Link>
+      </DropdownMenuItem>
+    </>
+  )}
+</DropdownMenuContent>
               </DropdownMenu>
             </div>
 
@@ -286,14 +298,22 @@ function Header() {
             <div className="pt-2 border-t border-gray-100">
               {isAuthenticated ? (
                 <div className="flex flex-col space-y-2">
-                  {isAdmin && (
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link to="/admin/dashboard" onClick={closeMenu}>
-                        <User className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </Button>
-                  )}
+                 {isAdmin && (
+  <>
+    <Button variant="ghost" className="justify-start" asChild>
+      <Link to="/admin/dashboard" onClick={closeMenu}>
+        <User className="mr-2 h-4 w-4" />
+        Dashboard
+      </Link>
+    </Button>
+    <Button variant="ghost" className="justify-start" asChild>
+      <Link to="/admin/chat" onClick={closeMenu}>
+        <MessageSquare className="mr-2 h-4 w-4" />
+        Chat
+      </Link>
+    </Button>
+  </>
+)}
                   <Button variant="ghost" className="justify-start" asChild>
                     <Link to="/profile" onClick={closeMenu}>
                       <User className="mr-2 h-4 w-4" />

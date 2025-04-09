@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // Add useEffect
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,26 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { createOrder, updateUserProfile } from "@/utils/api"; // Add updateUserProfile
+import { createOrder, updateUserProfile } from "@/utils/api";
+
+// Load PayPal SDK dynamically
+const loadPayPalScript = (clientId, callback) => {
+  const script = document.createElement("script");
+  script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons`;
+  script.async = true;
+  script.onload = () => callback();
+  script.onerror = () => {
+    toast.error("Failed to load PayPal SDK. Please try again.");
+  };
+  document.body.appendChild(script);
+};
 
 const CheckoutPage = () => {
   const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const paypalRef = useRef(null);
+  const [paypalLoaded, setPaypalLoaded] = useState(false);
 
   const [step, setStep] = useState("details");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -37,12 +51,11 @@ const CheckoutPage = () => {
   const [country, setCountry] = useState("US");
   const [saveInfo, setSaveInfo] = useState(false);
 
-  const [paymentMethod, setPaymentMethod] = useState("paypal"); // Default to PayPal
+  const [paymentMethod, setPaymentMethod] = useState("paypal");
 
   // Pre-fill user details when component mounts
   useEffect(() => {
     if (user) {
-      // Split the name into firstName and lastName
       const nameParts = user.name ? user.name.split(" ") : ["", ""];
       setFirstName(nameParts[0] || "");
       setLastName(nameParts.slice(1).join(" ") || "");
@@ -58,16 +71,14 @@ const CheckoutPage = () => {
 
   // Function to determine the price per case based on quantity
   const getPricePerCase = (item) => {
-    const quantity = item.quantity; // Number of cases
-    const unitsPerCase = item.moq; // Number of units per case
+    const quantity = item.quantity;
+    const unitsPerCase = item.moq;
 
-    // Determine the price per unit based on quantity
-    let pricePerUnit = item.price; // Default to 1–5 cases price
+    let pricePerUnit = item.price;
     if (quantity >= 6 && quantity <= 50) {
-      pricePerUnit = item.bulkPrice; // Use bulkPrice for 6–50 cases
+      pricePerUnit = item.bulkPrice;
     }
 
-    // Calculate the price per case
     return pricePerUnit * unitsPerCase;
   };
 
@@ -80,6 +91,85 @@ const CheckoutPage = () => {
   const shipping = subtotal > 50 ? 0 : 9.99;
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
+
+  // Load PayPal SDK when entering the payment step
+  useEffect(() => {
+    if (step === "payment" && !paypalLoaded) {
+      // Replace with your PayPal Sandbox Client ID
+      const clientId = "AabL_vsi80Vc6AMxyQMX51F-bxtwpTCT6z2lAlsUU0EiJf9hchTyOJPjlE8M2XmQSvTfaNBcinwKDqF4"; // Replace with your actual sandbox Client ID
+      loadPayPalScript(clientId, () => {
+        setPaypalLoaded(true);
+        window.paypal
+          .Buttons({
+            createOrder: (data, actions) => {
+              return actions.order.create({
+                purchase_units: [
+                  {
+                    amount: {
+                      value: total.toFixed(2),
+                      currency_code: "USD",
+                    },
+                  },
+                ],
+              });
+            },
+            onApprove: async (data, actions) => {
+              setIsProcessing(true);
+              try {
+                // Capture the payment
+                const details = await actions.order.capture();
+
+                // Create the order in your system
+                const orderItems = cartItems.map(item => ({
+                  id: item.id,
+                  name: item.name,
+                  quantity: item.quantity,
+                  pricePerCase: getPricePerCase(item),
+                  moq: item.moq,
+                }));
+
+                const orderData = {
+                  items: orderItems,
+                  total: total,
+                };
+
+                await createOrder(user.id, orderData);
+
+                // Save user details if saveInfo is checked
+                if (saveInfo) {
+                  const updatedData = {
+                    name: `${firstName} ${lastName}`.trim(),
+                    email,
+                    phone,
+                    address,
+                    city,
+                    state,
+                    zipCode,
+                    country,
+                  };
+                  await updateUserProfile(user.id, updatedData);
+                }
+
+                // Move to confirmation step
+                setIsProcessing(false);
+                setStep("confirmation");
+                clearCart();
+                window.scrollTo(0, 0);
+              } catch (err) {
+                setIsProcessing(false);
+                toast.error("Payment failed. Please try again.");
+                console.error("Payment error:", err);
+              }
+            },
+            onError: (err) => {
+              toast.error("An error occurred with PayPal. Please try again.");
+              console.error("PayPal error:", err);
+            },
+          })
+          .render(paypalRef.current);
+      });
+    }
+  }, [step, paypalLoaded, cartItems, user, saveInfo, firstName, lastName, email, phone, address, city, state, zipCode, country]);
 
   const validateDetails = () => {
     if (!firstName || !lastName || !email || !phone || !address || !city || !state || !zipCode) {
@@ -96,8 +186,7 @@ const CheckoutPage = () => {
   };
 
   const validatePayment = () => {
-    // No validation needed for PayPal since it redirects to PayPal's site
-    return true;
+    return true; // No validation needed for PayPal
   };
 
   const handleDetailsSubmit = (e) => {
@@ -111,60 +200,7 @@ const CheckoutPage = () => {
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     if (validatePayment()) {
-      setIsProcessing(true);
-
-      try {
-        // Check if user is authenticated
-        if (!user) {
-          toast.error("Please log in to place an order.");
-          navigate("/login");
-          return;
-        }
-
-        // Prepare order items
-        const orderItems = cartItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          pricePerCase: getPricePerCase(item),
-          moq: item.moq,
-        }));
-
-        // Create the order
-        const orderData = {
-          items: orderItems,
-          total: total,
-        };
-
-        await createOrder(user.id, orderData);
-
-        // Save user details if saveInfo is checked
-        if (saveInfo) {
-          const updatedData = {
-            name: `${firstName} ${lastName}`.trim(),
-            email,
-            phone,
-            address,
-            city,
-            state,
-            zipCode,
-            country
-          };
-          await updateUserProfile(user.id, updatedData);
-        }
-
-        // Simulate payment processing
-        setTimeout(() => {
-          setIsProcessing(false);
-          setStep("confirmation");
-          clearCart();
-          window.scrollTo(0, 0);
-        }, 2000);
-      } catch (err) {
-        setIsProcessing(false);
-        toast.error("Failed to place order. Please try again.");
-        console.error("Error placing order:", err);
-      }
+      // The PayPal button handles the payment flow
     }
   };
 
@@ -401,6 +437,7 @@ const CheckoutPage = () => {
                   {paymentMethod === "paypal" && (
                     <div className="text-center py-6">
                       <p className="mb-4">You will be redirected to PayPal to complete your payment.</p>
+                      <div id="paypal-button-container" ref={paypalRef}></div>
                     </div>
                   )}
 

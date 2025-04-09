@@ -1,9 +1,8 @@
-// src/App.jsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route } from "react-router-dom"; // Remove BrowserRouter
+import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
 import RetailPage from "./pages/RetailPage";
@@ -23,6 +22,7 @@ import ProfilePage from "./pages/ProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/AdminLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
+import AdminChat from "./pages/admin/AdminChat";
 import LeadsPage from "./pages/admin/LeadsPage";
 
 const queryClient = new QueryClient();
@@ -58,14 +58,20 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        <Route path="/admin" element={<ProtectedRoute requireAdmin={true} />}>
-          <Route element={<AdminLayout />}>
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="leads" element={<LeadsPage />} />
-            <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
-            <Route path="reports" element={<div>Reports Page (Coming Soon)</div>} />
-            <Route path="settings" element={<div>Settings Page (Coming Soon)</div>} />
-          </Route>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="leads" element={<LeadsPage />} />
+          <Route path="chat" element={<AdminChat />} />
+          <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
+          <Route path="reports" element={<div>Reports Page (Coming Soon)</div>} />
+          <Route path="settings" element={<div>Settings Page (Coming Soon)</div>} />
         </Route>
       </Routes>
     </TooltipProvider>

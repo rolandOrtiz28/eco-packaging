@@ -45,25 +45,25 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
               </p>
               {/* Display pricing tiers */}
               {product.details.pricing.map((priceTier, index) => {
-                const units = extractUnitsPerCase(priceTier.case);
-                const pricePerCase =
-                  typeof priceTier.pricePerUnit === "number"
-                    ? (priceTier.pricePerUnit * units).toFixed(2)
-                    : "Please contact office"; // For 50+ cases
-                return (
-                  <p key={index} className="text-sm text-gray-700">
-                    {priceTier.case.replace(/\(.*?\)/, "")}:{" "}
-                    {typeof priceTier.pricePerUnit === "number" ? (
-                      <>
-                        <span>¢ {priceTier.pricePerUnit.toFixed(2)} ea - </span>
-                        <span className="text-eco font-bold">${pricePerCase} per case</span>
-                      </>
-                    ) : (
-                      <span className="text-eco font-bold">{pricePerCase}</span>
-                    )}
-                  </p>
-                );
-              })}
+  const units = extractUnitsPerCase(priceTier.case);
+  const pricePerCase =
+    typeof priceTier.pricePerUnit === "number"
+      ? (priceTier.pricePerUnit * units).toFixed(2)
+      : "Please contact office";
+  return (
+    <p key={index} className="text-sm text-gray-700">
+      {priceTier.case.replace(/\(.*?\)/, "")}:{" "}
+      {typeof priceTier.pricePerUnit === "number" ? (
+        <>
+          <span>¢ {priceTier.pricePerUnit.toFixed(2)} ea - </span>
+          <span className="text-eco font-bold">${pricePerCase} per case</span>
+        </>
+      ) : (
+        <span className="text-eco font-bold">{pricePerCase}</span>
+      )}
+    </p>
+  );
+})}
             </div>
           ) : (
             <div className="mb-4">
