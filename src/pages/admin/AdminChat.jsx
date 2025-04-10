@@ -35,117 +35,97 @@ function AdminChat() {
       ? "http://localhost:3000"
       : "https://your-production-url.com";
 
-  useEffect(() => {
-    socketRef.current = io(API_BASE_URL, {
-      withCredentials: true,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
-    socketRef.current.on('connect', () => {
-      if (isAdminLoggedIn) {
-        socketRef.current.emit('admin-login');
-      }
-      if (activeChat) {
-        socketRef.current.emit('join-room', activeChat.userId);
-      }
-    });
-
-    socketRef.current.on('reconnect', () => {
-      if (isAdminLoggedIn) {
-        socketRef.current.emit('admin-login');
-      }
-      if (activeChat) {
-        socketRef.current.emit('join-room', activeChat.userId);
-      }
-    });
-
-    socketRef.current.on('reconnect_error', () => {
-      toast.error("Connection lost. Trying to reconnect...");
-    });
-
-    socketRef.current.on('new-chat', (data) => {
-      setRegisteredChats((prev) => {
-        if (prev.some((chat) => chat.userId === data.userId)) {
-          return prev;
-        }
-        return [...prev, {
-          userId: data.userId,
-          name: data.name,
-          email: data.email,
-          socketId: data.socketId,
-        }];
-      });
-      toast.info(`New chat request from ${data.name}`);
-    });
-
-    socketRef.current.on('chat-request', (data) => {
-      setRegisteredChats((prev) => {
-        if (prev.some((chat) => chat.userId === data.userId)) {
-          return prev;
-        }
-        return [...prev, {
-          userId: data.userId,
-          name: data.name,
-          email: data.email,
-          socketId: data.socketId,
-        }];
-      });
-      setNotifications((prev) => ({
-        ...prev,
-        [data.userId]: (prev[data.userId] || 0) + 1,
-      }));
-      toast.info(`Chat request from ${data.name}`);
-    });
-
-    socketRef.current.on('chat-notification', (data) => {
-      setNotifications((prev) => ({
-        ...prev,
-        [data.userId]: (prev[data.userId] || 0) + 1,
-      }));
-    });
-
-    socketRef.current.on('message', (data) => {
-      if (data.sender === "user" || data.sender === "bot") {
-        if (activeChat && data.userId === activeChat.userId) {
-          setMessages((prev) => {
-            // Normalize timestamps to seconds for comparison
-            const normalizeTimestamp = (ts) => new Date(ts).setMilliseconds(0);
-            const isDuplicate = prev.some(
-              (msg) =>
-                msg.text === data.text &&
-                msg.sender === data.sender &&
-                normalizeTimestamp(msg.timestamp) === normalizeTimestamp(data.timestamp || new Date().toISOString())
-            );
-            if (isDuplicate) {
-              return prev;
+      useEffect(() => {
+        socketRef.current = io(API_BASE_URL, {
+          withCredentials: true,
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+        });
+      
+        socketRef.current.on('connect', () => {
+          console.log('Admin: Socket connected:', socketRef.current.id);
+          if (isAdminLoggedIn) {
+            socketRef.current.emit('admin-login');
+          }
+        });
+      
+        socketRef.current.on('reconnect', () => {
+          console.log('Admin: Socket reconnected:', socketRef.current.id);
+          if (isAdminLoggedIn) {
+            socketRef.current.emit('admin-login');
+          }
+          if (activeChat) {
+            socketRef.current.emit('join-room', activeChat.userId);
+          }
+        });
+      
+        socketRef.current.on('reconnect_error', () => {
+          console.log('Admin: Socket reconnect error');
+          toast.error("Connection lost. Trying to reconnect...");
+        });
+      
+        socketRef.current.on('new-chat', (data) => {
+          console.log('Admin: New chat received:', data);
+          setRegisteredChats((prev) => {
+            if (!prev.some((chat) => chat.userId === data.userId)) {
+              return [...prev, { userId: data.userId, name: data.name, email: data.email, socketId: data.socketId }];
             }
-            return [
-              ...prev,
-              {
-                id: prev.length + 1,
-                text: data.text,
-                sender: data.sender,
-                name: data.name || (data.sender === "user" ? activeChat.name : "EcoBuddy"),
-                timestamp: data.timestamp || new Date().toISOString(),
-              },
-            ];
+            return prev;
           });
-        } else {
-          setNotifications((prev) => ({
-            ...prev,
-            [data.userId]: (prev[data.userId] || 0) + 1,
-          }));
-          toast.info(`New message from ${data.sender === "user" ? registeredChats.find(c => c.userId === data.userId)?.name || 'user' : 'EcoBuddy'}`);
-        }
-      }
-    });
-
-    return () => {
-      socketRef.current.disconnect();
-    };
-  }, [isAdminLoggedIn, activeChat]);
+          toast.info(`New chat request from ${data.name}`);
+        });
+      
+        socketRef.current.on('chat-request', (data) => {
+          console.log('Admin: Chat request received:', data);
+          setRegisteredChats((prev) => {
+            if (!prev.some((chat) => chat.userId === data.userId)) {
+              return [...prev, { userId: data.userId, name: data.name, email: data.email, socketId: data.socketId }];
+            }
+            return prev;
+          });
+          setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
+          toast.info(`Chat request from ${data.name}`);
+        });
+      
+        socketRef.current.on('chat-notification', (data) => {
+          console.log('Admin: Chat notification received:', data);
+          setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
+        });
+      
+        socketRef.current.on('message', (data) => {
+          console.log('Admin: Message received from server:', data);
+          console.log('Admin: Current activeChat:', activeChat);
+          if (activeChat && data.userId === activeChat.userId) {
+            console.log('Admin: Message matches active chat, updating messages');
+            setMessages((prev) => {
+              const isDuplicate = prev.some(
+                (msg) => msg.text === data.text && msg.sender === data.sender && msg.timestamp === data.timestamp
+              );
+              if (!isDuplicate) {
+                return [...prev, {
+                  id: prev.length + 1,
+                  text: data.text,
+                  sender: data.sender,
+                  name: data.name || (data.sender === "user" ? activeChat.name : data.sender === "admin" ? "Admin" : "EcoBuddy"),
+                  timestamp: data.timestamp || new Date().toISOString(),
+                }];
+              }
+              console.log('Admin: Message is a duplicate, skipping');
+              return prev;
+            });
+          } else {
+            console.log('Admin: Message does not match active chat, adding notification');
+            setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
+            toast.info(`New message from ${data.name || 'user'}`);
+          }
+        });
+      
+        return () => {
+          console.log('Admin: Disconnecting socket');
+          socketRef.current.disconnect();
+        };
+      }, [isAdminLoggedIn, activeChat]);
 
   useEffect(() => {
     if (loading) return;
@@ -287,45 +267,45 @@ function AdminChat() {
           </div>
         ) : (
           <ScrollArea className="h-[calc(100vh-80px)]">
-            {registeredChats.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">
-                No active chats
+  {registeredChats.length === 0 ? (
+    <div className="p-4 text-center text-muted-foreground">
+      No active chats
+    </div>
+  ) : (
+    <div className="divide-y">
+      {registeredChats.map((chat) => (
+        <div
+          key={chat.userId} // Ensure unique key
+          className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${
+            activeChat?.userId === chat.userId ? "bg-gray-100" : ""
+          }`}
+          onClick={() => handleOpenChat(chat)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback>
+                  {chat.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{chat.name}</p>
+                <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                  {chat.email}
+                </p>
               </div>
-            ) : (
-              <div className="divide-y">
-                {registeredChats.map((chat) => (
-                  <div
-                    key={chat.userId}
-                    className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      activeChat?.userId === chat.userId ? "bg-gray-100" : ""
-                    }`}
-                    onClick={() => handleOpenChat(chat)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback>
-                            {chat.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{chat.name}</p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">
-                            {chat.email}
-                          </p>
-                        </div>
-                      </div>
-                      {notifications[chat.userId] > 0 && (
-                        <Badge variant="destructive">
-                          {notifications[chat.userId]}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            </div>
+            {notifications[chat.userId] > 0 && (
+              <Badge variant="destructive">
+                {notifications[chat.userId]}
+              </Badge>
             )}
-          </ScrollArea>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</ScrollArea>
         )}
       </div>
 
@@ -442,3 +422,6 @@ function AdminChat() {
 }
 
 export default AdminChat;
+
+
+// base

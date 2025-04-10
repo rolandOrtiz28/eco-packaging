@@ -9,8 +9,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-
-
 export const getProducts = async () => {
   try {
     const response = await api.get('/products');
@@ -123,6 +121,99 @@ export const updateUserProfile = async (userId, updatedData) => {
   }
 };
 
+export const createPaypalOrder = async (userId, orderData) => {
+  try {
+    const response = await api.post('/order/create', { userId, ...orderData });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating PayPal order:', error);
+    throw error;
+  }
+};
+
+export const capturePaypalOrder = async (token, payerId) => {
+  try {
+    const response = await api.get('/order/capture', { params: { token, PayerID: payerId } });
+    return response.data;
+  } catch (error) {
+    console.error('Error capturing PayPal order:', error);
+    throw error;
+  }
+};
+
+export const completeOrder = async (userId, paypalOrderId, paymentId, orderData) => {
+  try {
+    const response = await api.post('/order/complete', { userId, paypalOrderId, paymentId, ...orderData });
+    return response.data;
+  } catch (error) {
+    console.error('Error completing order:', error);
+    throw error;
+  }
+};
+
+// Promo Code Functions
+export const createPromoCode = async (promoData) => {
+  try {
+    const response = await api.post('/promo', promoData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating promo code:', error);
+    throw error;
+  }
+};
+
+export const getPromoCodes = async () => {
+  try {
+    const response = await api.get('/promo');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching promo codes:', error);
+    throw error;
+  }
+};
+
+export const updatePromoCode = async (id, promoData) => {
+  try {
+    const response = await api.put(`/promo/${id}`, promoData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating promo code:', error);
+    throw error;
+  }
+};
+
+export const applyPromoCode = async (code, subtotal) => {
+  try {
+    const response = await api.post('/promo/apply', { code, subtotal });
+    return response.data;
+  } catch (error) {
+    console.error('Error applying promo code:', error);
+    throw error;
+  }
+};
+
+// Settings Functions
+export const getSettings = async () => {
+  try {
+    const response = await api.get('/settings');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    throw error;
+  }
+};
+
+export const updateSetting = async (key, value) => {
+  try {
+    const response = await api.post('/settings', { key, value });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating setting:', error);
+    throw error;
+  }
+};
+
+// Deprecated: Remove or keep as legacy if needed
 export const createOrder = async (userId, orderData) => {
   try {
     const response = await api.post('/checkout', { userId, ...orderData });

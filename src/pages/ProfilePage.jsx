@@ -51,7 +51,7 @@ const ProfilePage = () => {
   const handleReorder = (order) => {
     order.items.forEach(item => {
       const product = {
-        id: item.id,
+        id: item.productId, // Use productId
         name: item.name,
         price: item.pricePerCase / item.moq,
         bulkPrice: item.pricePerCase / item.moq,
@@ -165,10 +165,10 @@ const ProfilePage = () => {
                 {activeOrders.length > 0 ? (
                   <div className="space-y-8">
                     {activeOrders.map(order => (
-                      <div key={order.id} className="border rounded-lg p-4">
+                      <div key={order.orderId} className="border rounded-lg p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                           <div>
-                            <h3 className="text-lg font-semibold">Order #{order.id}</h3>
+                            <h3 className="text-lg font-semibold">Order #{order.orderId}</h3>
                             <p className="text-sm text-gray-500">Placed on: {order.date}</p>
                           </div>
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-2 sm:mt-0 ${
@@ -187,16 +187,20 @@ const ProfilePage = () => {
                         
                         <div className="space-y-3 mb-4">
                           {order.items.map(item => (
-                            <div key={item.id} className="flex justify-between items-start py-2">
+                            <div key={item.productId} className="flex justify-between items-start py-2">
                               <div>
-                                <p className="font-medium">{item.name}</p>
+                                <p className="font-medium">{item.name || "Unknown Item"}</p>
                                 <p className="text-sm text-gray-500">
-                                  {item.quantity} case(s) • {item.moq} units/case
+                                  {item.quantity} case(s) • {item.moq || "N/A"} units/case
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-medium">${(item.pricePerCase * item.quantity).toFixed(2)}</p>
-                                <p className="text-sm text-gray-500">${item.pricePerCase.toFixed(2)} per case</p>
+                                <p className="font-medium">
+                                  ${item.pricePerCase ? (item.pricePerCase * item.quantity).toFixed(2) : "N/A"}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  ${item.pricePerCase ? item.pricePerCase.toFixed(2) : "N/A"} per case
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -206,7 +210,7 @@ const ProfilePage = () => {
                         
                         <div className="flex justify-between items-center">
                           <p className="text-gray-700">Total</p>
-                          <p className="text-xl font-semibold text-eco">${order.total.toFixed(2)}</p>
+                          <p className="text-xl font-semibold text-eco">${order.total ? order.total.toFixed(2) : "N/A"}</p>
                         </div>
                       </div>
                     ))}
@@ -241,10 +245,10 @@ const ProfilePage = () => {
                 {orderHistory.length > 0 ? (
                   <div className="space-y-8">
                     {orderHistory.map(order => (
-                      <div key={order.id} className="border rounded-lg p-4">
+                      <div key={order.orderId} className="border rounded-lg p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                           <div>
-                            <h3 className="text-lg font-semibold">Order #{order.id}</h3>
+                            <h3 className="text-lg font-semibold">Order #{order.orderId}</h3>
                             <p className="text-sm text-gray-500">Placed on: {order.date}</p>
                           </div>
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-2 sm:mt-0 ${
@@ -263,16 +267,20 @@ const ProfilePage = () => {
                         
                         <div className="space-y-3 mb-4">
                           {order.items.map(item => (
-                            <div key={item.id} className="flex justify-between items-start py-2">
+                            <div key={item.productId} className="flex justify-between items-start py-2">
                               <div>
-                                <p className="font-medium">{item.name}</p>
+                                <p className="font-medium">{item.name || "Unknown Item"}</p>
                                 <p className="text-sm text-gray-500">
-                                  {item.quantity} case(s) • {item.moq} units/case
+                                  {item.quantity} case(s) • {item.moq || "N/A"} units/case
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-medium">${(item.pricePerCase * item.quantity).toFixed(2)}</p>
-                                <p className="text-sm text-gray-500">${item.pricePerCase.toFixed(2)} per case</p>
+                                <p className="font-medium">
+                                  ${item.pricePerCase ? (item.pricePerCase * item.quantity).toFixed(2) : "N/A"}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  ${item.pricePerCase ? item.pricePerCase.toFixed(2) : "N/A"} per case
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -282,7 +290,7 @@ const ProfilePage = () => {
                         
                         <div className="flex justify-between items-center">
                           <p className="text-gray-700">Total</p>
-                          <p className="text-xl font-semibold text-eco">${order.total.toFixed(2)}</p>
+                          <p className="text-xl font-semibold text-eco">${order.total ? order.total.toFixed(2) : "N/A"}</p>
                         </div>
                         
                         <Button

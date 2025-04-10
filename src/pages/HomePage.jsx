@@ -16,11 +16,9 @@ const HomePage = () => {
     const fetchData = async () => {
       try {
         const products = await getProducts();
-        console.log('Fetched products:', products);
         setFeaturedProducts(products.slice(0, 4));
         
         const posts = await getBlogPosts();
-        console.log('Fetched blog posts:', posts); // Already present
         setBlogPosts(posts.slice(0, 2));
       } catch (error) {
         console.error("Error fetching homepage data:", error);
@@ -139,7 +137,6 @@ const HomePage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredProducts.map(product => {
-  console.log('Rendering ProductCard with ID:', product.id);
   return (
     <ProductCard key={product.id} product={product} />
   );

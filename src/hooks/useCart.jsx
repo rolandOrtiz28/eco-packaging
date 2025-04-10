@@ -1,82 +1,71 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { toast } from "sonner"; // Import toast for notifications
 
 const CartContext = createContext(undefined);
 
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    const savedCart = localStorage.getItem("cartItems");
+    let items = savedCart ? JSON.parse(savedCart) : [];
+    // Fix items with undefined quantities
+    items = items.map(item => ({
+      ...item,
+      quantity: item.quantity !== undefined ? item.quantity : 1,
+    }));
+    return items;
+  });
+  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (error) {
-        console.error("Error parsing cart from localStorage:", error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product, quantity = 1) => {
-    setCartItems(prevItems => {
-      const existingItemIndex = prevItems.findIndex(item => item.id === product.id);
-      const newQuantity = existingItemIndex > -1 ? prevItems[existingItemIndex].quantity + quantity : quantity;
-
-      // Enforce 50-case limit
-      if (newQuantity > 50) {
-        toast.error("You cannot order more than 50 cases of any product. Please contact our office for larger orders.");
-        return prevItems; // Do not add if quantity exceeds 50 cases
+  const addToCart = (product, quantity) => {
+    const initialQuantity = Math.max(1, quantity || 1); // Ensure quantity is at least 1
+    setCartItems((prevItems) => {
+      const existingItem = prevItems.find((item) => item.id === product.id);
+      if (existingItem) {
+        return prevItems.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + initialQuantity }
+            : item
+        );
       }
-
-      if (existingItemIndex > -1) {
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: newQuantity,
-          pricingTiers: product.details.pricing, // Store the pricing tiers
-        };
-        return updatedItems;
-      } else {
-        return [
-          ...prevItems,
-          {
-            ...product,
-            quantity,
-            pricingTiers: product.details.pricing, // Store the pricing tiers
-          },
-        ];
-      }
+      return [...prevItems, { ...product, quantity: initialQuantity }];
     });
   };
 
-  const removeFromCart = (id) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== id));
+  const removeFromCart = (productId) => {
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
   };
 
-  const updateQuantity = (id, quantity) => {
-    if (quantity > 50) {
-      toast.error("You cannot order more than 50 cases of any product. Please contact our office for larger orders.");
-      return; // Do not update if quantity exceeds 50 cases
-    }
-
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === id ? { ...item, quantity } : item
+  const updateQuantity = (productId, quantity) => {
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
       )
     );
   };
 
   const clearCart = () => {
     setCartItems([]);
+    setDiscount(0);
+  };
+
+  const applyDiscount = (discountValue) => {
+    setDiscount(discountValue);
   };
 
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart }}
+      value={{
+        cartItems,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        discount,
+        applyDiscount,
+      }}
     >
       {children}
     </CartContext.Provider>

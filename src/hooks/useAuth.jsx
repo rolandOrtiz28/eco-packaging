@@ -13,24 +13,24 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   const fetchUser = async () => {
-    console.log("AuthProvider: fetchUser called");
+   
     try {
       const response = await api.get('/user');
-      console.log("AuthProvider: fetchUser response:", response.data);
+     
       const userData = response.data;
       setUser(userData);
       setIsAuthenticated(true);
       setIsAdmin(userData.role === "admin");
-      console.log("AuthProvider: fetchUser set state - isAuthenticated:", true, "isAdmin:", userData.role === "admin");
+    
     } catch (error) {
-      console.log("AuthProvider: fetchUser failed:", error.message);
+     
       setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
-      console.log("AuthProvider: fetchUser set state - isAuthenticated:", false, "isAdmin:", false);
+      
     } finally {
       setLoading(false);
-      console.log("AuthProvider: fetchUser loading set to false");
+      
     }
   };
 

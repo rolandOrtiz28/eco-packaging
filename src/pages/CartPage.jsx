@@ -1,46 +1,68 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Trash2, ShoppingBag, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/hooks/useCart";
-import { useAuth } from "@/hooks/useAuth"; // Add this import
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/utils/api";
 import { toast } from "sonner";
 
 const CartPage = () => {
-  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { isAuthenticated } = useAuth(); // Add this to check if user is logged in
+  const { cartItems, updateQuantity, removeFromCart, clearCart, discount, applyDiscount } = useCart();
+  const { isAuthenticated } = useAuth();
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [settings, setSettings] = useState({
+    taxRate: 0.08,
+    deliveryFee: 9.99,
+    freeDeliveryThreshold: 50,
+  });
   const navigate = useNavigate();
 
-  // Function to determine the price per case based on quantity
-  const getPricePerCase = (item) => {
-    const quantity = item.quantity; // Number of cases
-    const unitsPerCase = item.moq; // Number of units per case
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/settings');
+        setSettings({
+          taxRate: response.data.taxRate || 0.08,
+          deliveryFee: response.data.deliveryFee || 9.99,
+          freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
+        });
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+        toast.error("Failed to fetch tax and delivery settings");
+      }
+    };
+    fetchSettings();
+  }, []);
 
-    // Determine the price per unit based on quantity
-    let pricePerUnit = item.price; // Default to 1–5 cases price
+  const getPricePerCase = (item) => {
+    const quantity = item.quantity || 1; // Default to 1 if undefined
+    const unitsPerCase = parseInt(item.pcsPerCase) || 0;
+
+    let pricePerUnit = parseFloat(item.price) || 0;
     if (quantity >= 6 && quantity <= 50) {
-      pricePerUnit = item.bulkPrice; // Use bulkPrice for 6–50 cases
+      pricePerUnit = parseFloat(item.bulkPrice) || pricePerUnit;
     }
 
-    // Calculate the price per case
     return pricePerUnit * unitsPerCase;
   };
 
-  // Calculate subtotal using dynamic price per case
-  const subtotal = cartItems.reduce(
-    (total, item) => total + getPricePerCase(item) * item.quantity,
-    0
-  );
+  console.log('Cart items in CartPage:', cartItems);
 
-  const shipping = subtotal > 50 ? 0 : 9.99;
-  const tax = subtotal * 0.08;
-  const total = subtotal + shipping + tax;
+  const subtotal = cartItems.reduce((total, item) => {
+    const price = getPricePerCase(item);
+    const qty = item.quantity !== undefined ? item.quantity : 1; // Default to 1 if undefined
+    return total + (isNaN(price) ? 0 : price) * qty;
+  }, 0);
+  console.log('Subtotal in CartPage:', subtotal);
+
+  const shipping = subtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
+  const tax = subtotal * settings.taxRate;
+  const total = subtotal + shipping + tax - discount;
 
   const handleQuantityChange = (id, newQuantity) => {
-    if (newQuantity < 1) return;
     updateQuantity(id, newQuantity);
   };
 
@@ -48,15 +70,25 @@ const CartPage = () => {
     removeFromCart(id);
   };
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
 
     setIsApplyingCoupon(true);
 
-    setTimeout(() => {
-      alert(`Sorry, coupon "${couponCode}" is invalid or expired.`);
+    try {
+      console.log('Applying promo code with data in CartPage:', { code: couponCode, subtotal });
+      if (isNaN(subtotal) || subtotal <= 0) {
+        throw new Error("Cannot apply promo code: Cart subtotal is invalid or zero.");
+      }
+      const response = await api.post('/promo/apply', { code: couponCode, subtotal });
+      applyDiscount(response.data.discount);
+      toast.success(`Promo code applied! You saved $${response.data.discount}`);
+    } catch (err) {
+      console.error('Error applying promo code in CartPage:', err.response?.data || err.message);
+      toast.error(err.response?.data?.error || err.message || "Failed to apply promo code");
+    } finally {
       setIsApplyingCoupon(false);
-    }, 1000);
+    }
   };
 
   const handleCheckout = () => {
@@ -99,18 +131,19 @@ const CartPage = () => {
                               SKU: {item.id.toString().padStart(6, '0')}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              Price per case ({item.moq} units): ${getPricePerCase(item).toFixed(2)}
+                              Price per case ({item.pcsPerCase || 0} units): ${getPricePerCase(item).toFixed(2)}
                             </p>
                           </div>
                           <p className="font-medium text-eco">
-                            ${(getPricePerCase(item) * item.quantity).toFixed(2)}
+                            ${(getPricePerCase(item) * (item.quantity !== undefined ? item.quantity : 1)).toFixed(2)}
                           </p>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <button
-                              onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                              onClick={() => handleQuantityChange(item.id, (item.quantity || 1) - 1)}
                               className="w-8 h-8 flex items-center justify-center border rounded-l hover:bg-muted transition-colors"
+                              disabled={(item.quantity || 1) <= 1}
                             >
                               -
                             </button>
@@ -118,12 +151,12 @@ const CartPage = () => {
                               type="number"
                               min="1"
                               max="50"
-                              value={item.quantity}
+                              value={item.quantity !== undefined ? item.quantity : 1}
                               onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
                               className="w-12 h-8 border-t border-b text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <button
-                              onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                              onClick={() => handleQuantityChange(item.id, (item.quantity || 1) + 1)}
                               className="w-8 h-8 flex items-center justify-center border rounded-r hover:bg-muted transition-colors"
                             >
                               +
@@ -178,6 +211,11 @@ const CartPage = () => {
                     {isApplyingCoupon ? "Applying..." : "Apply"}
                   </Button>
                 </div>
+                {discount > 0 && (
+                  <p className="mt-2 text-green-600">
+                    Discount applied: ${discount.toFixed(2)}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -191,6 +229,10 @@ const CartPage = () => {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span>${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Discount</span>
+                      <span>-${discount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Shipping</span>

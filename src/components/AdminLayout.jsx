@@ -4,10 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 
 function AdminLayout() {
   const { user } = useAuth();
-
-  console.log("AdminLayout: Component rendered");
-  console.log("AdminLayout: user from useAuth:", user);
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />

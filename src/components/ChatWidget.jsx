@@ -27,6 +27,7 @@ function ChatWidget() {
   const [isHumanConnected, setIsHumanConnected] = useState(false);
   const [showInfoForm, setShowInfoForm] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isFirstMessage, setIsFirstMessage] = useState(true); // Track first message
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const adminTimeoutRef = useRef(null);
@@ -96,7 +97,7 @@ function ChatWidget() {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
-
+  
     socketRef.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
       if (userId) {
@@ -104,7 +105,7 @@ function ChatWidget() {
         socketRef.current.emit('join-room', userId);
       }
     });
-
+  
     socketRef.current.on('reconnect', () => {
       console.log('Reconnected to Socket.IO server');
       if (userId) {
@@ -112,13 +113,13 @@ function ChatWidget() {
         socketRef.current.emit('join-room', userId);
       }
     });
-
+  
     socketRef.current.on('reconnect_error', () => {
       console.log('Reconnection failed');
       toast.error("Connection lost. Please try again later.");
       closeChat();
     });
-
+  
     socketRef.current.on('awaiting-human', (data) => {
       console.log('Received awaiting-human event:', data);
       setAwaitingHuman(true);
@@ -128,15 +129,17 @@ function ChatWidget() {
           id: messageIdCounter.current++,
           text: data.message,
           sender: "bot",
+          name: "EcoBuddy",
           timestamp: new Date().toISOString(),
         },
       ]);
     });
-
+  
     socketRef.current.on('no-admins', (data) => {
       console.log('Received no-admins event:', data);
       setAwaitingHuman(false);
       setShowFollowUpForm(true);
+      setIsFirstMessage(true); // Re-enable AI responses
       setMessages((prev) => [
         ...prev,
         {
@@ -147,7 +150,7 @@ function ChatWidget() {
         },
       ]);
     });
-
+  
     socketRef.current.on('human-connected', (data) => {
       console.log('Received human-connected event:', data);
       setAwaitingHuman(false);
@@ -162,11 +165,12 @@ function ChatWidget() {
         },
       ]);
     });
-
+  
     socketRef.current.on('inactivity-disconnect', (data) => {
       console.log('Received inactivity-disconnect event:', data);
       setIsHumanConnected(false);
       setAwaitingHuman(false);
+      setIsFirstMessage(true); // Re-enable AI responses
       setMessages((prev) => {
         if (prev.some(msg => msg.text === data.message && msg.sender === "bot")) {
           return prev;
@@ -182,13 +186,23 @@ function ChatWidget() {
         ];
       });
     });
-
+  
     socketRef.current.on('message', (data) => {
       console.log('Received message from server:', data);
       setMessages((prev) => {
-        if (prev.some((msg) => msg.text === data.text && msg.timestamp === data.timestamp)) {
+        // Check for duplicates based on text, sender, and name
+        const lastMessage = prev[prev.length - 1];
+        const isDuplicate =
+          lastMessage &&
+          lastMessage.text === data.text &&
+          lastMessage.sender === data.sender &&
+          lastMessage.name === (data.sender === "admin" ? "Admin" : (data.sender === "user" ? name : "EcoBuddy"));
+
+        if (isDuplicate) {
+          console.log('Skipping duplicate message from Socket.IO');
           return prev;
         }
+
         return [
           ...prev,
           {
@@ -201,7 +215,7 @@ function ChatWidget() {
         ];
       });
     });
-
+  
     // Add a method to leave a room
     socketRef.current.leaveRoom = (roomId) => {
       if (roomId) {
@@ -209,7 +223,7 @@ function ChatWidget() {
         socketRef.current.emit('leave-room', roomId);
       }
     };
-
+  
     return () => {
       socketRef.current.off('connect');
       socketRef.current.off('reconnect');
@@ -221,7 +235,7 @@ function ChatWidget() {
       socketRef.current.off('message');
       socketRef.current.disconnect();
     };
-  }, [userId]);
+  }, [userId, name]);
 
   useEffect(() => {
     if (authLoading) {
@@ -251,6 +265,7 @@ function ChatWidget() {
         setMessages((prev) => prev.length === 0 ? [initialMessage] : prev);
         setShowInfoForm(false);
       }
+      setIsFirstMessage(true); // Reset isFirstMessage when chat opens
     }
   }, [chatState, isAuthenticated, isLoadingUser, name, email]);
 
@@ -267,6 +282,7 @@ function ChatWidget() {
           setUserId(null); // Reset userId to ensure a new session
           socketRef.current.leaveRoom(userId); // Leave the old room
           setMessages([initialMessage]);
+          setIsFirstMessage(true); // Reset isFirstMessage
           toast.success("Chat session updated with your account information.");
         } catch (error) {
           console.error("Error updating chat session email:", error);
@@ -275,6 +291,7 @@ function ChatWidget() {
           setUserId(null); // Reset userId to start fresh
           socketRef.current.leaveRoom(userId); // Leave the old room
           setMessages([initialMessage]);
+          setIsFirstMessage(true); // Reset isFirstMessage
           toast.error("Failed to update chat session with your account information. Starting a new session.");
         }
       };
@@ -313,6 +330,7 @@ function ChatWidget() {
     if (!isAuthenticated && !authLoading) {
       setMessages([]); // Clear messages on logout
       localStorage.removeItem("chatMessages"); // Clear from localStorage
+      setIsFirstMessage(true); // Reset isFirstMessage
       closeChat();
     }
   }, [isAuthenticated, authLoading]);
@@ -334,6 +352,7 @@ function ChatWidget() {
     setUserId(null);
     socketRef.current.leaveRoom(userId); // Leave the current room on close
     setShowInfoForm(false);
+    setIsFirstMessage(true); // Reset isFirstMessage
     if (adminTimeoutRef.current) {
       clearTimeout(adminTimeoutRef.current);
     }
@@ -361,6 +380,7 @@ function ChatWidget() {
       toast.success("Information submitted successfully!");
       setShowInfoForm(false);
       setMessages([initialMessage]);
+      setIsFirstMessage(true); // Reset isFirstMessage
     } catch (error) {
       console.error("Error saving user info:", error);
       toast.error("Failed to save your information. Please try again.");
@@ -383,58 +403,87 @@ function ChatWidget() {
       timestamp: new Date().toISOString(),
     };
   
+    console.log("Client: Sending message", {
+      message: inputValue,
+      userId: userId,
+      isHumanConnected: isHumanConnected,
+      awaitingHuman: awaitingHuman,
+    });
+  
     setInputValue("");
+    setMessages((prev) => [...prev, userMessage]);
   
-    console.log(`Sending message: ${inputValue}, isHumanConnected: ${isHumanConnected}, userId: ${userId}`);
-  
-    if (isHumanConnected) {
-      socketRef.current.emit('user-message', {
-        userId,
+    try {
+      console.log("Client: Submitting chat to server", { name, email, message: inputValue });
+      const response = await submitChat({
+        name,
+        email,
         message: inputValue,
-        timestamp: userMessage.timestamp,
       });
-    } else {
-      setMessages((prev) => [...prev, userMessage]); // Add user message only
   
-      try {
-        const response = await submitChat({
+      if (!response) {
+        throw new Error('No response from server');
+      }
+  
+      console.log("Client: Received response from server", response);
+  
+      if (inputValue.toLowerCase().includes('talk to human') || response.awaitingHuman) {
+        console.log("Client: Requesting human", { userId: response.userId });
+        setUserId(response.userId);
+        socketRef.current.emit('join-room', response.userId);
+        socketRef.current.emit('request-human', {
+          userId: response.userId,
           name,
           email,
           message: inputValue,
         });
-  
-        if (!response) {
-          throw new Error('No response from server');
+        setAwaitingHuman(true);
+      } else if (isHumanConnected) {
+        console.log("Client: Emitting user-message to server", {
+          userId: userId,
+          message: inputValue,
+          sender: "user",
+          name: name,
+          timestamp: userMessage.timestamp,
+        });
+        socketRef.current.emit('user-message', {
+          userId: userId,
+          message: inputValue,
+          sender: "user",
+          name: name,
+          timestamp: userMessage.timestamp,
+        });
+      } else {
+        console.log("Client: No human connected, handling AI response", { userId: response.userId });
+        setUserId(response.userId);
+        socketRef.current.emit('join-room', response.userId);
+        if (isFirstMessage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: messageIdCounter.current++,
+              text: response.message,
+              sender: "bot",
+              name: "EcoBuddy",
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          setIsFirstMessage(false);
         }
-  
-        if (response.awaitingHuman) {
-          setUserId(response.userId);
-          socketRef.current.emit('join-room', response.userId);
-          socketRef.current.emit('request-human', {
-            userId: response.userId,
-            name,
-            email,
-            message: inputValue,
-          });
-          setAwaitingHuman(true);
-        } else {
-          setUserId(response.userId);
-          socketRef.current.emit('join-room', response.userId); // Join the new room immediately
-        }
-      } catch (error) {
-        console.error("Error submitting chat:", error);
-        toast.error("Failed to send message. Please try again.");
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: messageIdCounter.current++,
-            text: "Sorry, there was an error processing your message. Please try again.",
-            sender: "bot",
-            name: "EcoBuddy",
-            timestamp: new Date().toISOString(),
-          },
-        ]);
       }
+    } catch (error) {
+      console.error("Client: Error submitting chat:", error);
+      toast.error("Failed to send message. Please try again.");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: messageIdCounter.current++,
+          text: "Sorry, there was an error processing your message. Please try again.",
+          sender: "bot",
+          name: "EcoBuddy",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     }
   };
 
@@ -496,7 +545,7 @@ function ChatWidget() {
       {chatState !== "closed" && (
         <div
           className={`fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white rounded-xl shadow-xl transition-all duration-300 flex flex-col overflow-hidden ${
-            chatState === "minimized" ? "h-14" : "h-[500px]"
+            chatState === "minimized" ? "h-14" : "h-[650px]"
           }`}
         >
           <div className="bg-eco text-white p-3 flex justify-between items-center">
@@ -666,3 +715,7 @@ function ChatWidget() {
 }
 
 export default ChatWidget;
+
+
+
+// base

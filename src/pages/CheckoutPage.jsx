@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,31 +15,26 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { createOrder, updateUserProfile } from "@/utils/api";
-
-// Load PayPal SDK dynamically
-const loadPayPalScript = (clientId, callback) => {
-  const script = document.createElement("script");
-  script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons`;
-  script.async = true;
-  script.onload = () => callback();
-  script.onerror = () => {
-    toast.error("Failed to load PayPal SDK. Please try again.");
-  };
-  document.body.appendChild(script);
-};
+import { api } from "@/utils/api";
+import { updateUserProfile, createPaypalOrder, capturePaypalOrder, completeOrder } from "@/utils/api";
 
 const CheckoutPage = () => {
-  const { cartItems, clearCart } = useCart();
-  const { user } = useAuth();
+  const { cartItems, clearCart, discount } = useCart();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const paypalRef = useRef(null);
-  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const location = useLocation();
 
-  const [step, setStep] = useState("details");
+  const [step, setStep] = useState(() => {
+    const savedStep = localStorage.getItem("checkoutStep");
+    return savedStep || "details";
+  });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [settings, setSettings] = useState({
+    taxRate: 0.08,
+    deliveryFee: 9.99,
+    freeDeliveryThreshold: 50,
+  });
 
-  // Initialize state with user data if available
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,7 +48,25 @@ const CheckoutPage = () => {
 
   const [paymentMethod, setPaymentMethod] = useState("paypal");
 
-  // Pre-fill user details when component mounts
+  // Fetch tax and delivery settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/settings');
+        setSettings({
+          taxRate: response.data.taxRate || 0.08,
+          deliveryFee: response.data.deliveryFee || 9.99,
+          freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
+        });
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+        toast.error("Failed to fetch tax and delivery settings");
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Pre-fill user details when user is loaded
   useEffect(() => {
     if (user) {
       const nameParts = user.name ? user.name.split(" ") : ["", ""];
@@ -69,10 +82,40 @@ const CheckoutPage = () => {
     }
   }, [user]);
 
+  // Save step to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("checkoutStep", step);
+  }, [step]);
+
+  // Handle PayPal redirect callback
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const token = query.get('token');
+    const payerId = query.get('PayerID');
+
+    if (token && payerId && user && !authLoading) {
+      handlePaymentCapture(token, payerId);
+    } else if (token && payerId && !user && !authLoading) {
+      toast.error("Please log in to complete your order.");
+      navigate("/login");
+    }
+  }, [location, user, authLoading]);
+
+  // Redirect to profile after confirmation
+  useEffect(() => {
+    if (step === "confirmation") {
+      const timer = setTimeout(() => {
+        localStorage.removeItem("checkoutStep");
+        navigate("/profile");
+      }, 5000); // 5-second delay
+      return () => clearTimeout(timer);
+    }
+  }, [step, navigate]);
+
   // Function to determine the price per case based on quantity
   const getPricePerCase = (item) => {
     const quantity = item.quantity;
-    const unitsPerCase = item.moq;
+    const unitsPerCase = item.pcsPerCase;
 
     let pricePerUnit = item.price;
     if (quantity >= 6 && quantity <= 50) {
@@ -82,94 +125,14 @@ const CheckoutPage = () => {
     return pricePerUnit * unitsPerCase;
   };
 
-  // Calculate subtotal using dynamic price per case
+  // Calculate totals
   const subtotal = cartItems.reduce(
     (total, item) => total + getPricePerCase(item) * item.quantity,
     0
   );
-
-  const shipping = subtotal > 50 ? 0 : 9.99;
-  const tax = subtotal * 0.08;
-  const total = subtotal + shipping + tax;
-
-  // Load PayPal SDK when entering the payment step
-  useEffect(() => {
-    if (step === "payment" && !paypalLoaded) {
-      // Replace with your PayPal Sandbox Client ID
-      const clientId = "AabL_vsi80Vc6AMxyQMX51F-bxtwpTCT6z2lAlsUU0EiJf9hchTyOJPjlE8M2XmQSvTfaNBcinwKDqF4"; // Replace with your actual sandbox Client ID
-      loadPayPalScript(clientId, () => {
-        setPaypalLoaded(true);
-        window.paypal
-          .Buttons({
-            createOrder: (data, actions) => {
-              return actions.order.create({
-                purchase_units: [
-                  {
-                    amount: {
-                      value: total.toFixed(2),
-                      currency_code: "USD",
-                    },
-                  },
-                ],
-              });
-            },
-            onApprove: async (data, actions) => {
-              setIsProcessing(true);
-              try {
-                // Capture the payment
-                const details = await actions.order.capture();
-
-                // Create the order in your system
-                const orderItems = cartItems.map(item => ({
-                  id: item.id,
-                  name: item.name,
-                  quantity: item.quantity,
-                  pricePerCase: getPricePerCase(item),
-                  moq: item.moq,
-                }));
-
-                const orderData = {
-                  items: orderItems,
-                  total: total,
-                };
-
-                await createOrder(user.id, orderData);
-
-                // Save user details if saveInfo is checked
-                if (saveInfo) {
-                  const updatedData = {
-                    name: `${firstName} ${lastName}`.trim(),
-                    email,
-                    phone,
-                    address,
-                    city,
-                    state,
-                    zipCode,
-                    country,
-                  };
-                  await updateUserProfile(user.id, updatedData);
-                }
-
-                // Move to confirmation step
-                setIsProcessing(false);
-                setStep("confirmation");
-                clearCart();
-                window.scrollTo(0, 0);
-              } catch (err) {
-                setIsProcessing(false);
-                toast.error("Payment failed. Please try again.");
-                console.error("Payment error:", err);
-              }
-            },
-            onError: (err) => {
-              toast.error("An error occurred with PayPal. Please try again.");
-              console.error("PayPal error:", err);
-            },
-          })
-          .render(paypalRef.current);
-      });
-    }
-  }, [step, paypalLoaded, cartItems, user, saveInfo, firstName, lastName, email, phone, address, city, state, zipCode, country]);
+  const shipping = subtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
+  const tax = subtotal * settings.taxRate;
+  const total = subtotal + shipping + tax - discount;
 
   const validateDetails = () => {
     if (!firstName || !lastName || !email || !phone || !address || !city || !state || !zipCode) {
@@ -185,10 +148,6 @@ const CheckoutPage = () => {
     return true;
   };
 
-  const validatePayment = () => {
-    return true; // No validation needed for PayPal
-  };
-
   const handleDetailsSubmit = (e) => {
     e.preventDefault();
     if (validateDetails()) {
@@ -199,14 +158,89 @@ const CheckoutPage = () => {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
-    if (validatePayment()) {
-      // The PayPal button handles the payment flow
+    setIsProcessing(true);
+
+    try {
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: getPricePerCase(item),
+          name: item.name,
+          moq: item.moq,
+          pcsPerCase: item.pcsPerCase,
+        })),
+        total,
+        discount, // Include discount in order data
+      };
+      const { approvalUrl } = await createPaypalOrder(user.id, orderData);
+      window.location.href = approvalUrl;
+    } catch (err) {
+      console.error("Failed to initiate payment:", err);
+      toast.error(err.message || "Failed to initiate payment");
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePaymentCapture = async (token, payerId) => {
+    setIsProcessing(true);
+    try {
+      const captureData = await capturePaypalOrder(token, payerId);
+      console.log("Payment captured:", captureData);
+
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: getPricePerCase(item),
+          name: item.name,
+          moq: item.moq,
+          pcsPerCase: item.pcsPerCase,
+        })),
+        total,
+        discount, // Include discount in order data
+      };
+      const orderResult = await completeOrder(user.id, token, captureData.paymentId, orderData);
+      console.log("Order completed:", orderResult);
+
+      if (saveInfo) {
+        const updatedData = {
+          name: `${firstName} ${lastName}`.trim(),
+          email,
+          phone,
+          address,
+          city,
+          state,
+          zipCode,
+          country,
+        };
+        await updateUserProfile(user.id, updatedData);
+      }
+
+      clearCart();
+      setStep("confirmation");
+      window.scrollTo(0, 0);
+      navigate('/checkout', { replace: true });
+    } catch (err) {
+      console.error("Payment capture failed:", err);
+      toast.error(err.message || "Payment capture failed. Please try again.");
+      setStep("payment");
+      setIsProcessing(false);
     }
   };
 
   const handleBackToShopping = () => {
     navigate("/retail");
   };
+
+  if (authLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user && !authLoading) {
+    navigate("/login");
+    return null;
+  }
 
   if (cartItems.length === 0 && step !== "confirmation") {
     navigate("/");
@@ -412,6 +446,7 @@ const CheckoutPage = () => {
                 shipping={shipping}
                 tax={tax}
                 total={total}
+                discount={discount}
               />
             </div>
           </div>
@@ -436,8 +471,7 @@ const CheckoutPage = () => {
 
                   {paymentMethod === "paypal" && (
                     <div className="text-center py-6">
-                      <p className="mb-4">You will be redirected to PayPal to complete your payment.</p>
-                      <div id="paypal-button-container" ref={paypalRef}></div>
+                      <p className="mb-4">Click below to pay with PayPal.</p>
                     </div>
                   )}
 
@@ -455,7 +489,7 @@ const CheckoutPage = () => {
                       className="flex-1 bg-eco hover:bg-eco-dark"
                       disabled={isProcessing}
                     >
-                      {isProcessing ? "Processing..." : "Complete Order"}
+                      {isProcessing ? "Processing..." : "Pay with PayPal"}
                     </Button>
                   </div>
                 </form>
@@ -469,6 +503,7 @@ const CheckoutPage = () => {
                 shipping={shipping}
                 tax={tax}
                 total={total}
+                discount={discount}
               />
             </div>
           </div>
@@ -488,12 +523,13 @@ const CheckoutPage = () => {
             <p className="text-muted-foreground mb-8">
               Your order number is <span className="font-medium text-foreground">ECO-{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</span>.
               We've sent a confirmation email to <span className="font-medium text-foreground">{email}</span> with all the details.
+              Redirecting to your profile...
             </p>
             <Button
-              onClick={handleBackToShopping}
+              onClick={() => navigate("/profile")}
               className="bg-eco hover:bg-eco-dark"
             >
-              Continue Shopping
+              Go to Profile Now
             </Button>
           </div>
         )}
@@ -502,13 +538,13 @@ const CheckoutPage = () => {
   );
 };
 
-// OrderSummary component remains unchanged
 const OrderSummary = ({
   cartItems,
   subtotal,
   shipping,
   tax,
-  total
+  total,
+  discount,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden sticky top-24">
@@ -529,15 +565,15 @@ const OrderSummary = ({
               <div className="ml-3 flex-grow">
                 <p className="text-sm font-medium">{item.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.quantity} case(s) ({item.moq} units/case)
+                  {item.quantity} case(s) ({item.pcsPerCase} units/case)
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Price per case: ${(item.quantity >= 6 && item.quantity <= 50 ? item.bulkPrice : item.price) * item.moq}
+                  Price per case: ${(item.quantity >= 6 && item.quantity <= 50 ? item.bulkPrice : item.price) * item.pcsPerCase}
                 </p>
               </div>
               <div className="ml-2 flex-shrink-0">
                 <p className="text-sm font-medium">
-                  ${((item.quantity >= 6 && item.quantity <= 50 ? item.bulkPrice : item.price) * item.moq * item.quantity).toFixed(2)}
+                  ${((item.quantity >= 6 && item.quantity <= 50 ? item.bulkPrice : item.price) * item.pcsPerCase * item.quantity).toFixed(2)}
                 </p>
               </div>
             </div>
@@ -548,6 +584,10 @@ const OrderSummary = ({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Discount</span>
+            <span>-${discount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Shipping</span>

@@ -24,6 +24,8 @@ import AdminLayout from "./components/AdminLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
 import AdminChat from "./pages/admin/AdminChat";
 import LeadsPage from "./pages/admin/LeadsPage";
+import PromoCodesPage from "./pages/admin/PromoCodesPage";
+import SettingsPage from "./pages/admin/SettingsPage"; // Add this import
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,7 @@ const App = () => (
           <Route path="distributor" element={<DistributorPage />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="checkout/capture" element={<CheckoutPage />} />
           <Route path="blog" element={<BlogPage />} />
           <Route path="blog/:id" element={<BlogPostPage />} />
           <Route path="contact" element={<ContactPage />} />
@@ -69,9 +72,10 @@ const App = () => (
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="leads" element={<LeadsPage />} />
           <Route path="chat" element={<AdminChat />} />
+          <Route path="promocodes" element={<PromoCodesPage />} />
+          <Route path="settings" element={<SettingsPage />} /> {/* Add this route */}
           <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
           <Route path="reports" element={<div>Reports Page (Coming Soon)</div>} />
-          <Route path="settings" element={<div>Settings Page (Coming Soon)</div>} />
         </Route>
       </Routes>
     </TooltipProvider>
