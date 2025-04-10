@@ -1,4 +1,3 @@
-// AdminChat.jsx
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,13 +5,8 @@ import { submitChat } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import io from 'socket.io-client';
 import axios from 'axios';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -35,97 +29,97 @@ function AdminChat() {
       ? "http://localhost:3000"
       : "https://your-production-url.com";
 
-      useEffect(() => {
-        socketRef.current = io(API_BASE_URL, {
-          withCredentials: true,
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-        });
-      
-        socketRef.current.on('connect', () => {
-          console.log('Admin: Socket connected:', socketRef.current.id);
-          if (isAdminLoggedIn) {
-            socketRef.current.emit('admin-login');
+  useEffect(() => {
+    socketRef.current = io(API_BASE_URL, {
+      withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('Admin: Socket connected:', socketRef.current.id);
+      if (isAdminLoggedIn) {
+        socketRef.current.emit('admin-login');
+      }
+    });
+
+    socketRef.current.on('reconnect', () => {
+      console.log('Admin: Socket reconnected:', socketRef.current.id);
+      if (isAdminLoggedIn) {
+        socketRef.current.emit('admin-login');
+      }
+      if (activeChat) {
+        socketRef.current.emit('join-room', activeChat.userId);
+      }
+    });
+
+    socketRef.current.on('reconnect_error', () => {
+      console.log('Admin: Socket reconnect error');
+      toast.error("Connection lost. Trying to reconnect...");
+    });
+
+    socketRef.current.on('new-chat', (data) => {
+      console.log('Admin: New chat received:', data);
+      setRegisteredChats((prev) => {
+        if (!prev.some((chat) => chat.userId === data.userId)) {
+          return [...prev, { userId: data.userId, name: data.name, email: data.email, socketId: data.socketId }];
+        }
+        return prev;
+      });
+      toast.info(`New chat request from ${data.name}`);
+    });
+
+    socketRef.current.on('chat-request', (data) => {
+      console.log('Admin: Chat request received:', data);
+      setRegisteredChats((prev) => {
+        if (!prev.some((chat) => chat.userId === data.userId)) {
+          return [...prev, { userId: data.userId, name: data.name, email: data.email, socketId: data.socketId }];
+        }
+        return prev;
+      });
+      setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
+      toast.info(`Chat request from ${data.name}`);
+    });
+
+    socketRef.current.on('chat-notification', (data) => {
+      console.log('Admin: Chat notification received:', data);
+      setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
+    });
+
+    socketRef.current.on('message', (data) => {
+      console.log('Admin: Message received from server:', data);
+      console.log('Admin: Current activeChat:', activeChat);
+      if (activeChat && data.userId === activeChat.userId) {
+        console.log('Admin: Message matches active chat, updating messages');
+        setMessages((prev) => {
+          const isDuplicate = prev.some(
+            (msg) => msg.text === data.text && msg.sender === data.sender && msg.timestamp === data.timestamp
+          );
+          if (!isDuplicate) {
+            return [...prev, {
+              id: prev.length + 1,
+              text: data.text,
+              sender: data.sender,
+              name: data.name || (data.sender === "user" ? activeChat.name : data.sender === "admin" ? "Admin" : "EcoBuddy"),
+              timestamp: data.timestamp || new Date().toISOString(),
+            }];
           }
+          console.log('Admin: Message is a duplicate, skipping');
+          return prev;
         });
-      
-        socketRef.current.on('reconnect', () => {
-          console.log('Admin: Socket reconnected:', socketRef.current.id);
-          if (isAdminLoggedIn) {
-            socketRef.current.emit('admin-login');
-          }
-          if (activeChat) {
-            socketRef.current.emit('join-room', activeChat.userId);
-          }
-        });
-      
-        socketRef.current.on('reconnect_error', () => {
-          console.log('Admin: Socket reconnect error');
-          toast.error("Connection lost. Trying to reconnect...");
-        });
-      
-        socketRef.current.on('new-chat', (data) => {
-          console.log('Admin: New chat received:', data);
-          setRegisteredChats((prev) => {
-            if (!prev.some((chat) => chat.userId === data.userId)) {
-              return [...prev, { userId: data.userId, name: data.name, email: data.email, socketId: data.socketId }];
-            }
-            return prev;
-          });
-          toast.info(`New chat request from ${data.name}`);
-        });
-      
-        socketRef.current.on('chat-request', (data) => {
-          console.log('Admin: Chat request received:', data);
-          setRegisteredChats((prev) => {
-            if (!prev.some((chat) => chat.userId === data.userId)) {
-              return [...prev, { userId: data.userId, name: data.name, email: data.email, socketId: data.socketId }];
-            }
-            return prev;
-          });
-          setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
-          toast.info(`Chat request from ${data.name}`);
-        });
-      
-        socketRef.current.on('chat-notification', (data) => {
-          console.log('Admin: Chat notification received:', data);
-          setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
-        });
-      
-        socketRef.current.on('message', (data) => {
-          console.log('Admin: Message received from server:', data);
-          console.log('Admin: Current activeChat:', activeChat);
-          if (activeChat && data.userId === activeChat.userId) {
-            console.log('Admin: Message matches active chat, updating messages');
-            setMessages((prev) => {
-              const isDuplicate = prev.some(
-                (msg) => msg.text === data.text && msg.sender === data.sender && msg.timestamp === data.timestamp
-              );
-              if (!isDuplicate) {
-                return [...prev, {
-                  id: prev.length + 1,
-                  text: data.text,
-                  sender: data.sender,
-                  name: data.name || (data.sender === "user" ? activeChat.name : data.sender === "admin" ? "Admin" : "EcoBuddy"),
-                  timestamp: data.timestamp || new Date().toISOString(),
-                }];
-              }
-              console.log('Admin: Message is a duplicate, skipping');
-              return prev;
-            });
-          } else {
-            console.log('Admin: Message does not match active chat, adding notification');
-            setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
-            toast.info(`New message from ${data.name || 'user'}`);
-          }
-        });
-      
-        return () => {
-          console.log('Admin: Disconnecting socket');
-          socketRef.current.disconnect();
-        };
-      }, [isAdminLoggedIn, activeChat]);
+      } else {
+        console.log('Admin: Message does not match active chat, adding notification');
+        setNotifications((prev) => ({ ...prev, [data.userId]: (prev[data.userId] || 0) + 1 }));
+        toast.info(`New message from ${data.name || 'user'}`);
+      }
+    });
+
+    return () => {
+      console.log('Admin: Disconnecting socket');
+      socketRef.current.disconnect();
+    };
+  }, [isAdminLoggedIn, activeChat]);
 
   useEffect(() => {
     if (loading) return;
@@ -248,77 +242,78 @@ function AdminChat() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-eco-paper">
       {/* Sidebar */}
-      <div className="w-80 border-r bg-white">
-        <div className="p-4 border-b">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <FiMessageSquare className="text-eco" />
-            Admin Chat
-          </h1>
-          <p className="text-sm text-muted-foreground">
+      <Card className="w-full sm:w-64 border-eco-light">
+        <CardHeader className="p-4 border-b border-eco-light">
+          <div className="flex items-center gap-2">
+            <FiMessageSquare className="text-eco h-5 w-5" />
+            <h1 className="text-lg font-heading text-eco-dark">Admin Chat</h1>
+          </div>
+          <p className="text-xs text-muted-foreground">
             {registeredChats.length} active chats
           </p>
-        </div>
-
-        {!isAdminLoggedIn ? (
-          <div className="p-4 text-center">
-            <p className="text-muted-foreground">Please login as admin</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-[calc(100vh-80px)]">
-  {registeredChats.length === 0 ? (
-    <div className="p-4 text-center text-muted-foreground">
-      No active chats
-    </div>
-  ) : (
-    <div className="divide-y">
-      {registeredChats.map((chat) => (
-        <div
-          key={chat.userId} // Ensure unique key
-          className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${
-            activeChat?.userId === chat.userId ? "bg-gray-100" : ""
-          }`}
-          onClick={() => handleOpenChat(chat)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback>
-                  {chat.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{chat.name}</p>
-                <p className="text-xs text-muted-foreground truncate max-w-[120px]">
-                  {chat.email}
-                </p>
-              </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!isAdminLoggedIn ? (
+            <div className="p-4 text-center">
+              <p className="text-sm text-muted-foreground">Please login as admin</p>
             </div>
-            {notifications[chat.userId] > 0 && (
-              <Badge variant="destructive">
-                {notifications[chat.userId]}
-              </Badge>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</ScrollArea>
-        )}
-      </div>
+          ) : (
+            <ScrollArea className="h-[calc(100vh-100px)]">
+              {registeredChats.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-sm">
+                  No active chats
+                </div>
+              ) : (
+                <div className="divide-y divide-eco-light">
+                  {registeredChats.map((chat) => (
+                    <div
+                      key={chat.userId}
+                      className={`p-3 hover:bg-eco-light cursor-pointer transition-colors ${
+                        activeChat?.userId === chat.userId ? "bg-eco-light" : ""
+                      }`}
+                      onClick={() => handleOpenChat(chat)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-eco-light text-eco-dark text-sm">
+                              {chat.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium text-eco-dark">{chat.name}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                              {chat.email}
+                            </p>
+                          </div>
+                        </div>
+                        {notifications[chat.userId] > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            {notifications[chat.userId]}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {!activeChat ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center max-w-md p-6">
-              <FiMessageSquare className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-lg font-medium text-gray-900">
+              <FiMessageSquare className="mx-auto h-10 w-10 text-eco-dark" />
+              <h3 className="mt-2 text-base font-heading text-eco-dark">
                 No chat selected
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Select a chat from the sidebar to start messaging
               </p>
             </div>
@@ -326,17 +321,17 @@ function AdminChat() {
         ) : (
           <>
             {/* Chat Header */}
-            <div className="border-b p-4 bg-white">
+            <div className="border-b border-eco-light p-3 bg-eco-paper">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-eco-light text-eco-dark text-sm">
                       {activeChat.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h2 className="font-semibold">{activeChat.name}</h2>
-                    <p className="text-sm text-muted-foreground">
+                    <h2 className="text-sm font-heading text-eco-dark">{activeChat.name}</h2>
+                    <p className="text-xs text-muted-foreground">
                       {activeChat.email}
                     </p>
                   </div>
@@ -344,7 +339,7 @@ function AdminChat() {
                 {!isConnectedToChat && (
                   <Button
                     onClick={handleConnectToChat}
-                    className="bg-eco hover:bg-eco-dark"
+                    className="bg-eco hover:bg-eco-dark text-white h-8 text-sm"
                   >
                     Connect to Chat
                   </Button>
@@ -353,8 +348,8 @@ function AdminChat() {
             </div>
 
             {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4 bg-gray-50">
-              <div className="space-y-4">
+            <ScrollArea className="flex-1 p-4 bg-eco-paper">
+              <div className="space-y-3">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -363,14 +358,14 @@ function AdminChat() {
                     }`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      className={`max-w-[70%] rounded-md px-3 py-2 text-sm ${
                         message.sender === "admin"
                           ? "bg-eco text-white rounded-tr-none"
-                          : "bg-white border rounded-tl-none"
+                          : "bg-white border border-eco-light rounded-tl-none"
                       }`}
                     >
-                      <p className="text-xs font-semibold">{message.name}</p>
-                      <p>{message.text}</p>
+                      <p className="text-xs text-muted-foreground">{message.name}</p>
+                      <p className="text-sm">{message.text}</p>
                       <p
                         className={`text-xs mt-1 text-right ${
                           message.sender === "admin" ? "text-white/80" : "text-muted-foreground"
@@ -389,27 +384,27 @@ function AdminChat() {
             </ScrollArea>
 
             {/* Message Input */}
-            <div className="border-t p-4 bg-white">
+            <div className="border-t border-eco-light p-3 bg-eco-paper">
               <div className="flex gap-2">
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message..."
-                  className="flex-1"
+                  className="flex-1 h-8 text-sm border-eco-light"
                   disabled={!isConnectedToChat}
                 />
                 <Button
                   onClick={handleSendMessage}
-                  className="bg-eco hover:bg-eco-dark"
+                  className="bg-eco hover:bg-eco-dark text-white h-8 w-8 p-0"
                   disabled={!inputValue.trim() || !isConnectedToChat}
                 >
                   <FiSend className="h-4 w-4" />
                 </Button>
               </div>
               {!isConnectedToChat && (
-                <div className="mt-2 flex items-center text-sm text-yellow-600">
-                  <FiAlertCircle className="mr-1" />
+                <div className="mt-2 flex items-center text-xs text-yellow-600">
+                  <FiAlertCircle className="mr-1 h-4 w-4" />
                   <span>You need to connect to the chat before sending messages</span>
                 </div>
               )}
@@ -422,6 +417,3 @@ function AdminChat() {
 }
 
 export default AdminChat;
-
-
-// base

@@ -63,7 +63,7 @@ const HomePage = () => {
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
                 <img 
-                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744076756/BagStory/Small-Wine-Liquor-Bag-black-01-1-768x768_ixjjga.jpg" 
+                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744274457/BagStory/Hero_ap2vi2.png" 
                   alt="Eco-friendly bags" 
                   className="rounded-lg shadow-lg max-w-full h-auto"
                 />

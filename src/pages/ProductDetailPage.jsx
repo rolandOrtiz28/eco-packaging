@@ -22,9 +22,9 @@ const ProductDetailPage = () => {
 
       setIsLoading(true);
       try {
-        const productData = await getProduct(parseInt(id));
+        const productData = await getProduct(id);
         setProduct(productData);
-        const related = await getRelatedProducts(parseInt(id));
+        const related = await getRelatedProducts(id);
         setRelatedProducts(related);
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -81,12 +81,8 @@ const ProductDetailPage = () => {
     );
   }
 
-  const productImages = [
-    product.image,
-    'https://images.unsplash.com/photo-1593443601238-67e54a7db53f',
-    'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9',
-    'https://images.unsplash.com/photo-1602830364589-c9e9a59f0d6f'
-  ];
+  // Use the product's images array, falling back to the main image if no additional images exist
+  const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
 
   return (
     <div className="bg-background">

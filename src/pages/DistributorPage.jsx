@@ -90,7 +90,7 @@ const DistributorPage = () => {
             </div>
             <div className="hidden lg:block">
               <img 
-                src="https://images.unsplash.com/photo-1561281623-64d0d72f8acb?q=80&w=1974" 
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744274457/BagStory/Hero_ap2vi2.png" 
                 alt="Bulk packaging solutions" 
                 className="rounded-lg shadow-lg"
               />

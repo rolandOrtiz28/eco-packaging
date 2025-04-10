@@ -2,10 +2,18 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, FileText, ShoppingBag, Users, ArrowUp, RefreshCw } from "lucide-react";
-import { ChartContainer } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Cell } from "recharts";
 import { getAnalyticsData } from "@/utils/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+
+const COLORS = {
+  blue: "#3b82f6",
+  purple: "#8b5cf6",
+  green: "#10b981",
+  orange: "#f97316",
+  gray: "#6b7280"
+};
 
 function DashboardPage() {
   const [period, setPeriod] = useState("month");
@@ -44,377 +52,378 @@ function DashboardPage() {
 
   if (loading && !analytics) {
     return (
-      <div className="bg-gray-50 min-h-screen py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-8">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-10 w-32" />
+      <Card className="border-eco-light">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <Skeleton className="h-6 w-40 rounded-md" />
+            <Skeleton className="h-8 w-28 rounded-md" />
           </div>
-          
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
             {[...Array(4)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-4 rounded-full" />
+              <Card key={i} className="border-eco-light">
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <Skeleton className="h-4 w-20 rounded-md" />
+                  <Skeleton className="h-6 w-6 rounded-md" />
                 </CardHeader>
                 <CardContent>
-                  <Skeleton className="h-8 w-full mb-1" />
-                  <Skeleton className="h-3 w-36" />
+                  <Skeleton className="h-8 w-full mb-2 rounded-md" />
+                  <Skeleton className="h-3 w-32 rounded-md" />
                 </CardContent>
               </Card>
             ))}
           </div>
-          
-          <div className="space-y-6">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-80 w-full" />
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-72 w-full rounded-md" />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error || !analytics) {
     return (
-      <div className="bg-gray-50 min-h-screen py-12">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-sm">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Error Loading Dashboard</h2>
-            <p className="text-gray-600 mb-6">{error || "Unable to load analytics data"}</p>
-            <button
-              onClick={refreshData}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
+      <Card className="border-eco-light max-w-md mx-auto">
+        <CardContent className="p-6 text-center">
+          <h2 className="text-lg font-heading text-eco-dark mb-2">Error Loading Dashboard</h2>
+          <p className="text-sm text-muted-foreground mb-4">{error || "Unable to load analytics data"}</p>
+          <Button
+            onClick={refreshData}
+            className="bg-eco text-white hover:bg-eco-dark text-sm h-8"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
+    <Card className="border-eco-light">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-            <p className="text-sm text-gray-500">Last updated: {new Date().toLocaleString()}</p>
+            <h1 className="text-xl font-heading text-eco-dark">Dashboard Overview</h1>
+            <p className="text-sm text-muted-foreground">
+              Last updated: {new Date().toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </p>
           </div>
-          <button
+          <Button
             onClick={refreshData}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="bg-eco text-white hover:bg-eco-dark text-sm h-8"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-4 w-4 mr-1" />
             Refresh Data
-          </button>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+          <StatCard 
+            title="Total Visits" 
+            value={analytics.totalVisits?.toLocaleString() || 0} 
+            icon={<User className="h-4 w-4 text-blue-600" />} 
+            change="12.3" 
+            iconBg="bg-blue-50"
+            color={COLORS.blue}
+          />
+          <StatCard 
+            title="Leads Captured" 
+            value={analytics.leadsCount?.toLocaleString() || 0} 
+            icon={<Users className="h-4 w-4 text-purple-600" />} 
+            change="2.1" 
+            iconBg="bg-purple-50"
+            color={COLORS.purple}
+          />
+          <StatCard 
+            title="Quote Requests" 
+            value={analytics.quoteRequests?.toLocaleString() || 0} 
+            icon={<FileText className="h-4 w-4 text-orange-600" />} 
+            change="28.5" 
+            iconBg="bg-orange-50"
+            color={COLORS.orange}
+          />
+          <StatCard 
+            title="Conversion Rate" 
+            value={analytics.conversionRate?.toFixed(1) || 0} 
+            suffix="%" 
+            icon={<ShoppingBag className="h-4 w-4 text-green-600" />} 
+            change="0.7" 
+            iconBg="bg-green-50"
+            color={COLORS.green}
+          />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Total Visits</CardTitle>
-              <div className="p-2 rounded-lg bg-blue-50">
-                <User className="h-4 w-4 text-blue-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-800">{analytics.totalVisits?.toLocaleString() || 0}</div>
-              <div className="flex items-center text-xs text-green-600 mt-1">
-                <ArrowUp className="h-3 w-3 mr-1" />
-                <span>12.3% from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Leads Captured</CardTitle>
-              <div className="p-2 rounded-lg bg-purple-50">
-                <Users className="h-4 w-4 text-purple-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-800">{analytics.leadsCount?.toLocaleString() || 0}</div>
-              <div className="flex items-center text-xs text-green-600 mt-1">
-                <ArrowUp className="h-3 w-3 mr-1" />
-                <span>2.1% from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Quote Requests</CardTitle>
-              <div className="p-2 rounded-lg bg-orange-50">
-                <FileText className="h-4 w-4 text-orange-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-800">{analytics.quoteRequests?.toLocaleString() || 0}</div>
-              <div className="flex items-center text-xs text-green-600 mt-1">
-                <ArrowUp className="h-3 w-3 mr-1" />
-                <span>28.5% from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Conversion Rate</CardTitle>
-              <div className="p-2 rounded-lg bg-green-50">
-                <ShoppingBag className="h-4 w-4 text-green-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-800">{analytics.conversionRate?.toFixed(1) || 0}%</div>
-              <div className="flex items-center text-xs text-green-600 mt-1">
-                <ArrowUp className="h-3 w-3 mr-1" />
-                <span>0.7% from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts Section */}
-        <Tabs defaultValue="traffic" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <TabsList className="bg-gray-100 p-1 rounded-lg">
-              <TabsTrigger value="traffic" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4 py-1 rounded-md">Traffic</TabsTrigger>
-              <TabsTrigger value="conversions" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4 py-1 rounded-md">Conversions</TabsTrigger>
-              <TabsTrigger value="pagevisits" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4 py-1 rounded-md">Page Visits</TabsTrigger>
+        <Tabs defaultValue="traffic" className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <TabsList className="bg-eco-paper p-1 rounded-md border border-eco-light">
+              <TabsTrigger 
+                value="traffic" 
+                className="data-[state=active]:bg-eco data-[state=active]:text-white px-3 py-1 rounded-sm text-sm font-medium"
+              >
+                Traffic
+              </TabsTrigger>
+              <TabsTrigger 
+                value="conversions" 
+                className="data-[state=active]:bg-eco data-[state=active]:text-white px-3 py-1 rounded-sm text-sm font-medium"
+              >
+                Conversions
+              </TabsTrigger>
+              <TabsTrigger 
+                value="pagevisits" 
+                className="data-[state=active]:bg-eco data-[state=active]:text-white px-3 py-1 rounded-sm text-sm font-medium"
+              >
+                Page Visits
+              </TabsTrigger>
             </TabsList>
-            
-            {period === "traffic" && (
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setPeriod("week")}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    period === "week" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  Week
-                </button>
-                <button
-                  onClick={() => setPeriod("month")}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    period === "month" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  Month
-                </button>
-                <button
-                  onClick={() => setPeriod("year")}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    period === "year" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  Year
-                </button>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              <PeriodButton 
+                active={period === "week"} 
+                onClick={() => setPeriod("week")}
+              >
+                Week
+              </PeriodButton>
+              <PeriodButton 
+                active={period === "month"} 
+                onClick={() => setPeriod("month")}
+              >
+                Month
+              </PeriodButton>
+              <PeriodButton 
+                active={period === "year"} 
+                onClick={() => setPeriod("year")}
+              >
+                Year
+              </PeriodButton>
+            </div>
           </div>
 
-          <TabsContent value="traffic" className="space-y-4">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg font-semibold text-gray-800">Traffic Overview</CardTitle>
-                    <CardDescription className="text-sm text-gray-500">
-                      Daily visits to your website over time
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                {analytics.visitsByTime && analytics.visitsByTime.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      visits: {
-                        label: "Visits",
-                        theme: {
-                          light: "#3b82f6",
-                          dark: "#3b82f6",
-                        },
-                      },
-                    }}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analytics.visitsByTime} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-  <XAxis 
-    dataKey="name" 
-    tick={{ fontSize: 12 }}
-    axisLine={false}
-    tickLine={false}
-  />
-  <YAxis 
-    tick={{ fontSize: 12 }}
-    axisLine={false}
-    tickLine={false}
-    domain={[0, 'dataMax + 0.25']} // Add padding to prevent cutoff
-    tickCount={5} // Control number of ticks
-    interval="preserveStartEnd" // Prevent label overlap
-  />
-  <Tooltip 
-    content={<CustomTooltip />} 
-    cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
-  />
-  <Bar 
-    dataKey="visits" 
-    fill="#3b82f6" 
-    radius={[4, 4, 0, 0]} 
-    barSize={24}
-  />
-</BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    No traffic data available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="traffic">
+            <ChartCard 
+              title="Traffic Overview"
+              description="Daily visits to your website over time"
+              data={analytics.visitsByTime}
+              chartType="bar"
+              color={COLORS.blue}
+              emptyMessage="No traffic data available"
+              period={period}
+            />
           </TabsContent>
-
-          <TabsContent value="conversions" className="space-y-4">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800">Conversion Trends</CardTitle>
-                <CardDescription className="text-sm text-gray-500">
-                  Monthly lead conversions over time
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                {analytics.conversions && analytics.conversions.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      value: {
-                        label: "Conversions",
-                        theme: {
-                          light: "#10b981",
-                          dark: "#10b981",
-                        },
-                      },
-                    }}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={analytics.conversions} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-                        <XAxis 
-                          dataKey="name" 
-                          tick={{ fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <YAxis 
-                          tick={{ fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <Tooltip 
-                          content={<CustomTooltip />} 
-                          cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#10b981" 
-                          strokeWidth={2} 
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    No conversions data available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="conversions">
+            <ChartCard 
+              title="Conversion Trends"
+              description="Monthly lead conversions over time"
+              data={analytics.conversions}
+              chartType="line"
+              color={COLORS.green}
+              emptyMessage="No conversions data available"
+              period={period}
+            />
           </TabsContent>
-
-          <TabsContent value="pagevisits" className="space-y-4">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800">Page Visit Distribution</CardTitle>
-                <CardDescription className="text-sm text-gray-500">
-                  Breakdown of visits by page
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                {analytics.visitsByPage && analytics.visitsByPage.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      visits: {
-                        label: "Visits",
-                        theme: {
-                          light: "#8b5cf6",
-                          dark: "#8b5cf6",
-                        },
-                      },
-                    }}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={analytics.visitsByPage} 
-                        layout="vertical" 
-                        margin={{ top: 20, right: 20, bottom: 20, left: 40 }}
-                      >
-                        <XAxis 
-                          type="number" 
-                          tick={{ fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <YAxis 
-                          type="category" 
-                          dataKey="name" 
-                          tick={{ fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={100}
-                        />
-                        <Tooltip 
-                          content={<CustomTooltip />} 
-                          cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
-                        />
-                        <Bar 
-                          dataKey="visits" 
-                          fill="#8b5cf6" 
-                          radius={[0, 4, 4, 0]} 
-                          barSize={16}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    No page visits data available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="pagevisits">
+            <ChartCard 
+              title="Page Visit Distribution"
+              description="Breakdown of visits by page"
+              data={analytics.visitsByPage}
+              chartType="horizontalBar"
+              color={COLORS.purple}
+              emptyMessage="No page visits data available"
+              period={period}
+            />
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function CustomTooltip({ active, payload }) {
+function StatCard({ title, value, icon, change, iconBg, suffix = "", color }) {
+  return (
+    <Card className="border-eco-light hover:bg-eco-light/20 transition-colors">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
+        <div className={`p-2 rounded-md ${iconBg}`}>
+          {icon}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xl font-heading text-eco-dark">
+          {value}{suffix}
+        </div>
+        <div className="flex items-center text-xs mt-1" style={{ color }}>
+          <ArrowUp className="h-3 w-3 mr-1" />
+          <span>{change}% from last month</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChartCard({ title, description, data, chartType, color, emptyMessage, period }) {
+  const processedData = processChartData(data, period, chartType);
+
+  return (
+    <Card className="border-eco-light">
+      <CardHeader>
+        <div>
+          <CardTitle className="text-base font-heading text-eco-dark">{title}</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            {description}
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="h-[300px]">
+        {processedData && processedData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            {chartType === "bar" && (
+              <BarChart 
+                data={processedData} 
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                barCategoryGap="15%"
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12, fill: COLORS.gray }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: COLORS.gray }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  content={<CustomTooltip color={color} />} 
+                  cursor={{ fill: 'rgba(0, 0, 0, 0.03)' }}
+                />
+                <Bar 
+                  dataKey="value" 
+                  radius={[4, 4, 0, 0]} 
+                  barSize={28}
+                >
+                  {processedData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            )}
+            {chartType === "line" && (
+              <LineChart 
+                data={processedData} 
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12, fill: COLORS.gray }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: COLORS.gray }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  content={<CustomTooltip color={color} />} 
+                  cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke={color} 
+                  strokeWidth={2.5} 
+                  dot={{ r: 4, stroke: color, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 6, stroke: color, strokeWidth: 2, fill: '#fff' }}
+                />
+              </LineChart>
+            )}
+            {chartType === "horizontalBar" && (
+              <BarChart 
+                data={processedData} 
+                layout="vertical" 
+                margin={{ top: 20, right: 20, bottom: 20, left: 40 }}
+                barCategoryGap="15%"
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={true} vertical={false} />
+                <XAxis 
+                  type="number" 
+                  tick={{ fontSize: 12, fill: COLORS.gray }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  type="category" 
+                  dataKey="name" 
+                  tick={{ fontSize: 12, fill: COLORS.gray }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={100}
+                />
+                <Tooltip 
+                  content={<CustomTooltip color={color} />} 
+                  cursor={{ fill: 'rgba(0, 0, 0, 0.03)' }}
+                />
+                <Bar 
+                  dataKey="value" 
+                  radius={[0, 4, 4, 0]} 
+                  barSize={20}
+                >
+                  {processedData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+            {emptyMessage}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function processChartData(data, period, chartType) {
+  if (!data) return [];
+  return data.map(item => ({
+    name: item.name,
+    value: chartType === "horizontalBar" ? item.visits : item.value || item.visits
+  }));
+}
+
+function PeriodButton({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors focus:outline-none ${
+        active ? "bg-eco text-white" : "bg-eco-light text-eco-dark hover:bg-eco-light/50"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function CustomTooltip({ active, payload, color }) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm">
-        <p className="text-xs font-medium text-gray-500">{payload[0].payload.name}</p>
-        <p className="text-sm font-bold text-gray-800">
-          {payload[0].value.toLocaleString()} {payload[0].name}
+      <div className="bg-eco-paper p-2 border border-eco-light rounded-md">
+        <p className="text-xs text-muted-foreground">{payload[0].payload.name}</p>
+        <p className="text-sm font-heading text-eco-dark">
+          {payload[0].value.toLocaleString()} {payload[0].name === "value" ? "visits" : ""}
         </p>
       </div>
     );

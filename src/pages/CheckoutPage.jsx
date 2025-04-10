@@ -173,6 +173,7 @@ const CheckoutPage = () => {
         total,
         discount, // Include discount in order data
       };
+      console.log('Creating PayPal order with data:', orderData); // Add logging
       const { approvalUrl } = await createPaypalOrder(user.id, orderData);
       window.location.href = approvalUrl;
     } catch (err) {
@@ -200,6 +201,7 @@ const CheckoutPage = () => {
         total,
         discount, // Include discount in order data
       };
+      console.log('Completing order with data:', orderData); // Add logging
       const orderResult = await completeOrder(user.id, token, captureData.paymentId, orderData);
       console.log("Order completed:", orderResult);
 

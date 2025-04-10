@@ -4,7 +4,7 @@ import { api } from "@/utils/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 
 const SettingsPage = () => {
@@ -55,60 +55,66 @@ const SettingsPage = () => {
   };
 
   if (!isAdmin) {
-    return <div>Access denied. Admin only.</div>;
+    return <div className="p-4 text-center text-eco-dark">Access denied. Admin only.</div>;
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Manage Tax and Delivery Settings</h1>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tax and Delivery Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
-              <Input
-                id="taxRate"
-                name="taxRate"
-                type="number"
-                step="0.01"
-                value={settings.taxRate * 100}
-                onChange={(e) => setSettings(prev => ({ ...prev, taxRate: parseFloat(e.target.value) / 100 }))}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="deliveryFee">Delivery Fee ($ per order)</Label>
-              <Input
-                id="deliveryFee"
-                name="deliveryFee"
-                type="number"
-                step="0.01"
-                value={settings.deliveryFee}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="freeDeliveryThreshold">Free Delivery Threshold ($)</Label>
-              <Input
-                id="freeDeliveryThreshold"
-                name="freeDeliveryThreshold"
-                type="number"
-                step="0.01"
-                value={settings.freeDeliveryThreshold}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <Button type="submit" className="bg-eco hover:bg-eco-dark">Save Settings</Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="border-eco-light max-w-md mx-auto">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-heading text-eco-dark">Tax and Delivery Settings</h1>
+            <p className="text-sm text-muted-foreground">Manage tax rates and delivery fees</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <Label htmlFor="taxRate" className="text-sm text-eco-dark">Tax Rate (%)</Label>
+            <Input
+              id="taxRate"
+              name="taxRate"
+              type="number"
+              step="0.01"
+              value={settings.taxRate * 100}
+              onChange={(e) => setSettings(prev => ({ ...prev, taxRate: parseFloat(e.target.value) / 100 }))}
+              required
+              className="h-8 text-sm border-eco-light"
+            />
+          </div>
+          <div>
+            <Label htmlFor="deliveryFee" className="text-sm text-eco-dark">Delivery Fee ($ per order)</Label>
+            <Input
+              id="deliveryFee"
+              name="deliveryFee"
+              type="number"
+              step="0.01"
+              value={settings.deliveryFee}
+              onChange={handleInputChange}
+              required
+              className="h-8 text-sm border-eco-light"
+            />
+          </div>
+          <div>
+            <Label htmlFor="freeDeliveryThreshold" className="text-sm text-eco-dark">Free Delivery Threshold ($)</Label>
+            <Input
+              id="freeDeliveryThreshold"
+              name="freeDeliveryThreshold"
+              type="number"
+              step="0.01"
+              value={settings.freeDeliveryThreshold}
+              onChange={handleInputChange}
+              required
+              className="h-8 text-sm border-eco-light"
+            />
+          </div>
+          <Button type="submit" className="bg-eco hover:bg-eco-dark text-white h-8 text-sm">
+            Save Settings
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

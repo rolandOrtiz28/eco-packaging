@@ -13,14 +13,21 @@ export function CartProvider({ children }) {
     }));
     return items;
   });
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState(() => {
+    const savedDiscount = localStorage.getItem("cartDiscount");
+    return savedDiscount ? parseFloat(savedDiscount) : 0;
+  });
 
   useEffect(() => {
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
 
+  useEffect(() => {
+    localStorage.setItem("cartDiscount", discount.toString());
+  }, [discount]);
+
   const addToCart = (product, quantity) => {
-    const initialQuantity = Math.max(1, quantity || 1); // Ensure quantity is at least 1
+    const initialQuantity = Math.max(1, quantity || 1);
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === product.id);
       if (existingItem) {

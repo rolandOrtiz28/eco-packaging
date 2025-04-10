@@ -25,7 +25,10 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import AdminChat from "./pages/admin/AdminChat";
 import LeadsPage from "./pages/admin/LeadsPage";
 import PromoCodesPage from "./pages/admin/PromoCodesPage";
-import SettingsPage from "./pages/admin/SettingsPage"; // Add this import
+import ProductsPage from './pages/admin/ProductsPage';
+import SettingsPage from "./pages/admin/SettingsPage"; 
+import QuotesPage from './pages/admin/QuotesPage';
+import OrdersPage from './pages/admin/OrdersPage';
 
 const queryClient = new QueryClient();
 
@@ -73,7 +76,10 @@ const App = () => (
           <Route path="leads" element={<LeadsPage />} />
           <Route path="chat" element={<AdminChat />} />
           <Route path="promocodes" element={<PromoCodesPage />} />
-          <Route path="settings" element={<SettingsPage />} /> {/* Add this route */}
+          <Route path="settings" element={<SettingsPage />} /> 
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="quotes" element={<QuotesPage />} />
+          <Route path="orders" element={<OrdersPage />} />
           <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
           <Route path="reports" element={<div>Reports Page (Coming Soon)</div>} />
         </Route>
@@ -81,5 +87,8 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+
+
 
 export default App;

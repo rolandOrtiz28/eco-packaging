@@ -13,12 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Pencil, Plus, Search } from "lucide-react";
 
 const PromoCodesPage = () => {
   const { isAdmin } = useAuth();
   const [promoCodes, setPromoCodes] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [newPromo, setNewPromo] = useState({
     code: "",
     discountType: "percentage",
@@ -116,7 +117,7 @@ const PromoCodesPage = () => {
         usageLimit: editPromo.usageLimit ? parseInt(editPromo.usageLimit) : undefined,
         isActive: editPromo.isActive,
       };
-      const response = await api.put(`/promo/${editPromo._id}`, promoData); // Fix: Use api.put instead of api.updatePromoCode
+      const response = await api.put(`/promo/${editPromo._id}`, promoData);
       setPromoCodes(prev => prev.map(promo => promo._id === editPromo._id ? response.data : promo));
       setIsEditDialogOpen(false);
       setEditPromo(null);
@@ -137,159 +138,198 @@ const PromoCodesPage = () => {
   };
 
   if (!isAdmin) {
-    return <div>Access denied. Admin only.</div>;
+    return <div className="p-4 text-center text-eco-dark">Access denied. Admin only.</div>;
   }
 
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Manage Promo Codes</h1>
+  const filteredPromoCodes = promoCodes.filter(promo =>
+    promo.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Create New Promo Code</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="code">Promo Code</Label>
-              <Input id="code" name="code" value={newPromo.code} onChange={handleInputChange} required />
-            </div>
-            <div>
-              <Label htmlFor="discountType">Discount Type</Label>
-              <Select value={newPromo.discountType} onValueChange={handleDiscountTypeChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select discount type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">Percentage</SelectItem>
-                  <SelectItem value="fixed">Fixed Amount</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="discountValue">Discount Value</Label>
-              <Input id="discountValue" name="discountValue" type="number" value={newPromo.discountValue} onChange={handleInputChange} required />
-            </div>
-            <div>
-              <Label htmlFor="minOrderValue">Minimum Order Value</Label>
-              <Input id="minOrderValue" name="minOrderValue" type="number" value={newPromo.minOrderValue} onChange={handleInputChange} required />
-            </div>
-            {newPromo.discountType === "percentage" && (
-              <div>
-                <Label htmlFor="maxDiscount">Maximum Discount (Optional)</Label>
-                <Input id="maxDiscount" name="maxDiscount" type="number" value={newPromo.maxDiscount} onChange={handleInputChange} />
+  return (
+    <Card className="border-eco-light">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-heading text-eco-dark">Manage Promo Codes</h1>
+            <p className="text-sm text-muted-foreground">Create and manage promotional codes</p>
+          </div>
+          <div className="relative flex w-full sm:w-auto">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search promo codes..."
+              className="pl-8 pr-4 py-2 w-full sm:w-64 rounded-md border-eco-light focus:ring-eco focus:border-eco text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Card className="mb-6 border-eco-light">
+          <CardHeader>
+            <CardTitle className="text-base font-heading text-eco-dark">Create New Promo Code</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="code" className="text-sm text-eco-dark">Promo Code</Label>
+                  <Input id="code" name="code" value={newPromo.code} onChange={handleInputChange} required className="h-8 text-sm border-eco-light" />
+                </div>
+                <div>
+                  <Label htmlFor="discountType" className="text-sm text-eco-dark">Discount Type</Label>
+                  <Select value={newPromo.discountType} onValueChange={handleDiscountTypeChange}>
+                    <SelectTrigger className="h-8 text-sm border-eco-light">
+                      <SelectValue placeholder="Select discount type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="discountValue" className="text-sm text-eco-dark">Discount Value</Label>
+                  <Input id="discountValue" name="discountValue" type="number" value={newPromo.discountValue} onChange={handleInputChange} required className="h-8 text-sm border-eco-light" />
+                </div>
+                <div>
+                  <Label htmlFor="minOrderValue" className="text-sm text-eco-dark">Minimum Order Value</Label>
+                  <Input id="minOrderValue" name="minOrderValue" type="number" value={newPromo.minOrderValue} onChange={handleInputChange} required className="h-8 text-sm border-eco-light" />
+                </div>
+                {newPromo.discountType === "percentage" && (
+                  <div>
+                    <Label htmlFor="maxDiscount" className="text-sm text-eco-dark">Maximum Discount (Optional)</Label>
+                    <Input id="maxDiscount" name="maxDiscount" type="number" value={newPromo.maxDiscount} onChange={handleInputChange} className="h-8 text-sm border-eco-light" />
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="startDate" className="text-sm text-eco-dark">Start Date</Label>
+                  <Input id="startDate" name="startDate" type="date" value={newPromo.startDate} onChange={handleInputChange} required className="h-8 text-sm border-eco-light" />
+                </div>
+                <div>
+                  <Label htmlFor="endDate" className="text-sm text-eco-dark">End Date</Label>
+                  <Input id="endDate" name="endDate" type="date" value={newPromo.endDate} onChange={handleInputChange} required className="h-8 text-sm border-eco-light" />
+                </div>
+                <div>
+                  <Label htmlFor="usageLimit" className="text-sm text-eco-dark">Usage Limit (Optional)</Label>
+                  <Input id="usageLimit" name="usageLimit" type="number" value={newPromo.usageLimit} onChange={handleInputChange} className="h-8 text-sm border-eco-light" />
+                </div>
               </div>
-            )}
-            <div>
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input id="startDate" name="startDate" type="date" value={newPromo.startDate} onChange={handleInputChange} required />
-            </div>
-            <div>
-              <Label htmlFor="endDate">End Date</Label>
-              <Input id="endDate" name="endDate" type="date" value={newPromo.endDate} onChange={handleInputChange} required />
-            </div>
-            <div>
-              <Label htmlFor="usageLimit">Usage Limit (Optional)</Label>
-              <Input id="usageLimit" name="usageLimit" type="number" value={newPromo.usageLimit} onChange={handleInputChange} />
-            </div>
-            <Button type="submit" className="bg-eco hover:bg-eco-dark">Create Promo Code</Button>
-          </form>
+              <Button type="submit" className="bg-eco hover:bg-eco-dark text-white h-8 text-sm mt-2">
+                <Plus size={16} className="mr-1" />
+                Create Promo Code
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <h2 className="text-lg font-heading text-eco-dark mb-4">Existing Promo Codes</h2>
+<div className="space-y-2">
+  {filteredPromoCodes.length > 0 ? (
+    filteredPromoCodes.map(promo => (
+      <Card key={promo._id} className="border-eco-light">
+        <CardContent className="flex justify-between items-center p-3">
+          <div className="text-sm text-eco-dark">
+            <span className="font-medium">{promo.code}</span> - {promo.discountType === 'percentage' ? `${promo.discountValue}%` : `$${promo.discountValue}`} | Min: ${promo.minOrderValue} | From: {new Date(promo.startDate).toLocaleDateString()} to {new Date(promo.endDate).toLocaleDateString()} | Limit: {promo.usageLimit || 'Unlimited'} | Used: {promo.usedCount} | {promo.isActive ? 'Active' : 'Inactive'}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openEditDialog(promo)}
+                className="text-eco-dark hover:text-eco hover:bg-eco-light h-8"
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md w-[90%] bg-eco-paper border-eco-light">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-heading text-eco-dark">Edit Promo Code</DialogTitle>
+              </DialogHeader>
+              {editPromo && (
+                <form onSubmit={handleEditSubmit} className="space-y-3">
+                  <div>
+                    <Label htmlFor="editCode" className="text-sm text-eco-dark">Promo Code</Label>
+                    <Input id="editCode" name="code" value={editPromo.code} onChange={handleEditInputChange} required className="h-8 text-sm border-eco-light" />
+                  </div>
+                  <div>
+                    <Label htmlFor="editDiscountType" className="text-sm text-eco-dark">Discount Type</Label>
+                    <Select value={editPromo.discountType} onValueChange={handleEditDiscountTypeChange}>
+                      <SelectTrigger className="h-8 text-sm border-eco-light">
+                        <SelectValue placeholder="Select discount type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="editDiscountValue" className="text-sm text-eco-dark">Discount Value</Label>
+                    <Input id="editDiscountValue" name="discountValue" type="number" value={editPromo.discountValue} onChange={handleEditInputChange} required className="h-8 text-sm border-eco-light" />
+                  </div>
+                  <div>
+                    <Label htmlFor="editMinOrderValue" className="text-sm text-eco-dark">Minimum Order Value</Label>
+                    <Input id="editMinOrderValue" name="minOrderValue" type="number" value={editPromo.minOrderValue} onChange={handleEditInputChange} required className="h-8 text-sm border-eco-light" />
+                  </div>
+                  {editPromo.discountType === "percentage" && (
+                    <div>
+                      <Label htmlFor="editMaxDiscount" className="text-sm text-eco-dark">Maximum Discount (Optional)</Label>
+                      <Input id="editMaxDiscount" name="maxDiscount" type="number" value={editPromo.maxDiscount || ""} onChange={handleEditInputChange} className="h-8 text-sm border-eco-light" />
+                    </div>
+                  )}
+                  <div>
+                    <Label htmlFor="editStartDate" className="text-sm text-eco-dark">Start Date</Label>
+                    <Input id="editStartDate" name="startDate" type="date" value={editPromo.startDate} onChange={handleEditInputChange} required className="h-8 text-sm border-eco-light" />
+                  </div>
+                  <div>
+                    <Label htmlFor="editEndDate" className="text-sm text-eco-dark">End Date</Label>
+                    <Input id="editEndDate" name="endDate" type="date" value={editPromo.endDate} onChange={handleEditInputChange} required className="h-8 text-sm border-eco-light" />
+                  </div>
+                  <div>
+                    <Label htmlFor="editUsageLimit" className="text-sm text-eco-dark">Usage Limit (Optional)</Label>
+                    <Input id="editUsageLimit" name="usageLimit" type="number" value={editPromo.usageLimit || ""} onChange={handleEditInputChange} className="h-8 text-sm border-eco-light" />
+                  </div>
+                  <div>
+                    <Label htmlFor="editIsActive" className="text-sm text-eco-dark">Active</Label>
+                    <Select value={editPromo.isActive.toString()} onValueChange={(value) => setEditPromo(prev => ({ ...prev, isActive: value === "true" }))}>
+                      <SelectTrigger className="h-8 text-sm border-eco-light">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Active</SelectItem>
+                        <SelectItem value="false">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditDialogOpen(false)}
+                      className="border-eco text-eco-dark hover:bg-eco-light text-sm h-8"
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="bg-eco hover:bg-eco-dark text-white h-8 text-sm">
+                      Update Promo Code
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
-
-      <h2 className="text-2xl font-semibold mb-4">Existing Promo Codes</h2>
-      <div className="space-y-4">
-        {promoCodes.map(promo => (
-          <Card key={promo._id}>
-            <CardContent className="pt-6 flex justify-between items-start">
-              <div>
-                <p><strong>Code:</strong> {promo.code}</p>
-                <p><strong>Discount:</strong> {promo.discountType === 'percentage' ? `${promo.discountValue}%` : `$${promo.discountValue}`}</p>
-                <p><strong>Min Order Value:</strong> ${promo.minOrderValue}</p>
-                {promo.maxDiscount && <p><strong>Max Discount:</strong> ${promo.maxDiscount}</p>}
-                <p><strong>Valid From:</strong> {new Date(promo.startDate).toLocaleDateString()}</p>
-                <p><strong>Valid Until:</strong> {new Date(promo.endDate).toLocaleDateString()}</p>
-                <p><strong>Usage Limit:</strong> {promo.usageLimit || 'Unlimited'}</p>
-                <p><strong>Used:</strong> {promo.usedCount} times</p>
-                <p><strong>Status:</strong> {promo.isActive ? 'Active' : 'Inactive'}</p>
-              </div>
-              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(promo)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Edit Promo Code</DialogTitle>
-                  </DialogHeader>
-                  {editPromo && (
-                    <form onSubmit={handleEditSubmit} className="space-y-4">
-                      <div>
-                        <Label htmlFor="editCode">Promo Code</Label>
-                        <Input id="editCode" name="code" value={editPromo.code} onChange={handleEditInputChange} required />
-                      </div>
-                      <div>
-                        <Label htmlFor="editDiscountType">Discount Type</Label>
-                        <Select value={editPromo.discountType} onValueChange={handleEditDiscountTypeChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select discount type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="percentage">Percentage</SelectItem>
-                            <SelectItem value="fixed">Fixed Amount</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="editDiscountValue">Discount Value</Label>
-                        <Input id="editDiscountValue" name="discountValue" type="number" value={editPromo.discountValue} onChange={handleEditInputChange} required />
-                      </div>
-                      <div>
-                        <Label htmlFor="editMinOrderValue">Minimum Order Value</Label>
-                        <Input id="editMinOrderValue" name="minOrderValue" type="number" value={editPromo.minOrderValue} onChange={handleEditInputChange} required />
-                      </div>
-                      {editPromo.discountType === "percentage" && (
-                        <div>
-                          <Label htmlFor="editMaxDiscount">Maximum Discount (Optional)</Label>
-                          <Input id="editMaxDiscount" name="maxDiscount" type="number" value={editPromo.maxDiscount || ""} onChange={handleEditInputChange} />
-                        </div>
-                      )}
-                      <div>
-                        <Label htmlFor="editStartDate">Start Date</Label>
-                        <Input id="editStartDate" name="startDate" type="date" value={editPromo.startDate} onChange={handleEditInputChange} required />
-                      </div>
-                      <div>
-                        <Label htmlFor="editEndDate">End Date</Label>
-                        <Input id="editEndDate" name="endDate" type="date" value={editPromo.endDate} onChange={handleEditInputChange} required />
-                      </div>
-                      <div>
-                        <Label htmlFor="editUsageLimit">Usage Limit (Optional)</Label>
-                        <Input id="editUsageLimit" name="usageLimit" type="number" value={editPromo.usageLimit || ""} onChange={handleEditInputChange} />
-                      </div>
-                      <div>
-                        <Label htmlFor="editIsActive">Active</Label>
-                        <Select value={editPromo.isActive.toString()} onValueChange={(value) => setEditPromo(prev => ({ ...prev, isActive: value === "true" }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="true">Active</SelectItem>
-                            <SelectItem value="false">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button type="submit" className="bg-eco hover:bg-eco-dark">Update Promo Code</Button>
-                    </form>
-                  )}
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+    ))
+  ) : (
+    <p className="text-center text-sm text-muted-foreground py-4">No promo codes found</p>
+  )}
+</div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -39,12 +39,11 @@ function Header() {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center" onClick={closeMenu}>
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-eco rounded-full flex items-center justify-center">
+              {/* <div className="w-10 h-10 bg-eco rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-xl">E</span>
-              </div>
+              </div> */}
               <div className="hidden md:block">
-                <h1 className="text-xl font-bold text-eco">Eco Packaging</h1>
-                <p className="text-xs text-muted-foreground">Products Inc.</p>
+                <img className="w-24" src="https://res.cloudinary.com/rolandortiz/image/upload/v1744076811/BagStory/Bag-Store-Logo-new_cuf411.png" alt="" />
               </div>
             </div>
           </Link>

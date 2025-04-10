@@ -17,8 +17,9 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
 
   // Function to extract the number of units per case from the pricing tier's case string
   const extractUnitsPerCase = (caseString) => {
-    const match = caseString.match(/\((\d+)pcs\)/);
-    return match ? parseInt(match[1], 10) : product.moq; // Fallback to moq if not found
+    // Match both "pcs" and "pc" (e.g., "(500pcs)" or "(500pc)")
+    const match = caseString.match(/\((\d+)(?:pcs|pc)\)/);
+    return match ? parseInt(match[1], 10) : product.pcsPerCase; // Fallback to pcsPerCase if not found
   };
 
   // Calculate the per-case price for the distributor mode (bulk price)
@@ -32,7 +33,7 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
           />
         </div>
         <div className="p-4">
@@ -45,25 +46,26 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
               </p>
               {/* Display pricing tiers */}
               {product.details.pricing.map((priceTier, index) => {
-  const units = extractUnitsPerCase(priceTier.case);
-  const pricePerCase =
-    typeof priceTier.pricePerUnit === "number"
-      ? (priceTier.pricePerUnit * units).toFixed(2)
-      : "Please contact office";
-  return (
-    <p key={index} className="text-sm text-gray-700">
-      {priceTier.case.replace(/\(.*?\)/, "")}:{" "}
-      {typeof priceTier.pricePerUnit === "number" ? (
-        <>
-          <span>¢ {priceTier.pricePerUnit.toFixed(2)} ea - </span>
-          <span className="text-eco font-bold">${pricePerCase} per case</span>
-        </>
-      ) : (
-        <span className="text-eco font-bold">{pricePerCase}</span>
-      )}
-    </p>
-  );
-})}
+                const units = extractUnitsPerCase(priceTier.case);
+                // Parse pricePerUnit as a number if possible, otherwise use the string
+                const parsedPricePerUnit = parseFloat(priceTier.pricePerUnit);
+                const pricePerCase = !isNaN(parsedPricePerUnit)
+                  ? (parsedPricePerUnit * units).toFixed(2)
+                  : "Please contact office";
+                return (
+                  <p key={index} className="text-sm text-gray-700">
+                    {priceTier.case.replace(/\(.*?\)/, "")}:{" "}
+                    {!isNaN(parsedPricePerUnit) ? (
+                      <>
+                        <span>¢ {parsedPricePerUnit.toFixed(2)} ea - </span>
+                        <span className="text-eco font-bold">${pricePerCase} per case</span>
+                      </>
+                    ) : (
+                      <span className="text-eco font-bold">{pricePerCase}</span>
+                    )}
+                  </p>
+                );
+              })}
             </div>
           ) : (
             <div className="mb-4">

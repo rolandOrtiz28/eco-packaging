@@ -17,32 +17,36 @@ function QuoteFormModal({ product, isOpen, onClose }) {
 
   if (!isOpen || !product) return null;
 
+  // Calculate the per-case price
+  const perCasePrice = (product.bulkPrice * product.pcsPerCase).toFixed(2);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!name || !company || !email || !quantity) {
       toast.error("Please fill in all required fields");
       return;
     }
-    
+
     if (!email.includes('@') || !email.includes('.')) {
       toast.error("Please provide a valid email address");
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      
+
       await submitQuote({
+        productId: product.id, // Add productId for the backend
+        productName: product.name,
         name,
         company,
         email,
         phone,
-        products: product.name,
-        quantity: parseInt(quantity),
-        message
+        quantity: parseInt(quantity, 10),
+        message,
       });
-      
+
       toast.success("Quote request submitted successfully!");
       setName("");
       setCompany("");
@@ -64,7 +68,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-auto">
         <div className="p-5 border-b flex items-center justify-between">
           <h2 className="text-xl font-semibold">Request Bulk Quote</h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             aria-label="Close modal"
@@ -72,23 +76,23 @@ function QuoteFormModal({ product, isOpen, onClose }) {
             <X size={20} />
           </button>
         </div>
-        
+
         <div className="p-5">
           <div className="flex items-center mb-5 p-3 bg-muted rounded-lg">
             <div className="w-16 h-16 flex-shrink-0">
-              <img 
-                src={product.image} 
-                alt={product.name} 
+              <img
+                src={product.image}
+                alt={product.name}
                 className="w-full h-full object-cover rounded"
               />
             </div>
             <div className="ml-3">
               <h3 className="font-medium">{product.name}</h3>
               <p className="text-sm text-muted-foreground">MOQ: {product.moq} units</p>
-              <p className="text-eco font-medium">${product.bulkPrice.toFixed(2)}/unit</p>
+              <p className="text-eco font-medium">${perCasePrice} per case ({product.pcsPerCase} units)</p>
             </div>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-1">
@@ -102,7 +106,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="company" className="block text-sm font-medium mb-1">
                 Company <span className="text-destructive">*</span>
@@ -115,7 +119,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-1">
                 Email <span className="text-destructive">*</span>
@@ -129,7 +133,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="phone" className="block text-sm font-medium mb-1">
                 Phone
@@ -142,7 +146,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
                 placeholder="+1 (555) 123-4567"
               />
             </div>
-            
+
             <div>
               <label htmlFor="quantity" className="block text-sm font-medium mb-1">
                 Quantity <span className="text-destructive">*</span>
@@ -157,7 +161,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="message" className="block text-sm font-medium mb-1">
                 Additional Details
@@ -170,10 +174,10 @@ function QuoteFormModal({ product, isOpen, onClose }) {
                 rows={4}
               />
             </div>
-            
+
             <div className="pt-2">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-eco hover:bg-eco-dark"
                 disabled={isSubmitting}
               >

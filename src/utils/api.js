@@ -29,6 +29,7 @@ export const getProduct = async (id) => {
   }
 };
 
+
 export const getRelatedProducts = async (id) => {
   try {
     const response = await api.get(`/related-products/${id}`);
@@ -45,6 +46,40 @@ export const getDistributorProducts = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching distributor products:', error);
+    throw error;
+  }
+};
+
+export const createProduct = async (formData) => {
+  try {
+    const response = await api.post('/products', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating product:', error);
+    throw error;
+  }
+};
+
+export const updateProduct = async (id, formData) => {
+  try {
+    const response = await api.put(`/products/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating product with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+export const deleteProduct = async (id) => {
+  try {
+    const response = await api.delete(`/products/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting product with ID ${id}:`, error);
     throw error;
   }
 };
@@ -117,6 +152,26 @@ export const updateUserProfile = async (userId, updatedData) => {
     return response.data;
   } catch (error) {
     console.error(`Error updating user profile for user ID ${userId}:`, error);
+    throw error;
+  }
+};
+
+export const getOrders = async () => {
+  try {
+    const response = await api.get('/order');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    throw error;
+  }
+};
+
+export const updateOrderStatus = async (id, status) => {
+  try {
+    const response = await api.put(`/orders/${id}/status`, { status });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating order status with ID ${id}:`, error);
     throw error;
   }
 };
@@ -234,6 +289,46 @@ export const submitQuote = async (data) => {
   }
 };
 
+export const getQuotes = async () => {
+  try {
+    const response = await api.get('/quotes');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching quotes:', error);
+    throw error;
+  }
+};
+
+export const updateQuoteStatus = async (id, status) => {
+  try {
+    const response = await api.put(`/quotes/${id}/status`, { status });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating quote status with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+export const sendQuoteReply = async (id, replyMessage) => {
+  try {
+    const response = await api.post(`/quotes/${id}/reply`, { replyMessage });
+    return response.data;
+  } catch (error) {
+    console.error(`Error sending reply for quote with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+export const deleteQuote = async (id) => {
+  try {
+    const response = await api.delete(`/quotes/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting quote with ID ${id}:`, error);
+    throw error;
+  }
+};
+
 export const submitContact = async (data) => {
   try {
     const response = await api.post('/contact', data);
@@ -271,6 +366,36 @@ export const getLeads = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching leads:', error);
+    throw error;
+  }
+};
+
+export const getUsers = async () => {
+  try {
+    const response = await api.get('/users');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+export const submitSubscriber = async (data) => {
+  try {
+    const response = await api.post('/subscribers', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting subscriber:', error);
+    throw error;
+  }
+};
+
+export const getSubscribers = async () => {
+  try {
+    const response = await api.get('/subscribers');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching subscribers:', error);
     throw error;
   }
 };
