@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // Add useState
+import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { api } from "@/utils/api";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
+import ErrorBoundary from "./components/ErrorBoundary"; // Import ErrorBoundary
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
 import RetailPage from "./pages/RetailPage";
@@ -42,10 +43,9 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Log page visit
     const logVisit = async () => {
       try {
         await api.post('/analytics/visit', { pageUrl: location.pathname });
@@ -56,13 +56,12 @@ const App = () => {
     };
     logVisit();
 
-    // Show loader for at least 2 seconds on route change
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 2000);
 
-    return () => clearTimeout(timer); // Cleanup timer
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   if (isLoading) {
@@ -85,58 +84,59 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner toastOptions={{ duration: 5000 }} />
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<HomePage />} />
-              <Route path="retail" element={<RetailPage />} />
-              <Route path="retail/product/:id" element={<ProductDetailPage />} />
-              <Route path="distributor" element={<DistributorPage />} />
-              <Route path="cart" element={<CartPage />} />
-              <Route path="checkout" element={<CheckoutPage />} />
-              <Route path="checkout/capture" element={<CheckoutPage />} />
-              <Route path="blog" element={<BlogPage />} />
-              <Route path="blog/:slug" element={<BlogPostPage />} />
-              <Route path="contact" element={<ContactPage />} />
-              <Route path="about" element={<AboutPage />} />
-              <Route path="advertisement" element={<AdvertisementPage />} />
-              <Route path="payment-returns" element={<PaymentReturnsPage />} />
-              <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
+          <ErrorBoundary> {/* Wrap Routes with ErrorBoundary */}
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="retail" element={<RetailPage />} />
+                <Route path="retail/product/:id" element={<ProductDetailPage />} />
+                <Route path="distributor" element={<DistributorPage />} />
+                <Route path="cart" element={<CartPage />} />
+                <Route path="checkout" element={<CheckoutPage />} />
+                <Route path="checkout/capture" element={<CheckoutPage />} />
+                <Route path="blog" element={<BlogPage />} />
+                <Route path="blog/:slug" element={<BlogPostPage />} />
+                <Route path="contact" element={<ContactPage />} />
+                <Route path="about" element={<AboutPage />} />
+                <Route path="advertisement" element={<AdvertisementPage />} />
+                <Route path="payment-returns" element={<PaymentReturnsPage />} />
+                <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route
+                  path="profile"
+                  element={
+                    <ProtectedRoute requireAdmin={false}>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Route>
               <Route
-                path="profile"
+                path="/admin"
                 element={
-                  <ProtectedRoute requireAdmin={false}>
-                    <ProfilePage />
+                  <ProtectedRoute requireAdmin={true}>
+                    <AdminLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requireAdmin={true}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="leads" element={<LeadsPage />} />
-              <Route path="chat" element={<AdminChat />} />
-              <Route path="promocodes" element={<PromoCodesPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="products" element={<ProductsPage />} />
-              <Route path="quotes" element={<QuotesPage />} />
-              <Route path="orders" element={<OrdersPage />} />
-              <Route path="blog" element={<BlogAdminPage />} />
-              <Route path="blog/new" element={<BlogFormPage />} />
-              <Route path="blog/edit/:slug" element={<BlogFormPage />} />
-              <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
-              <Route path="reports" element={<div>Reports Page (Coming Soon)</div>} />
-            </Route>
-          </Routes>
+              >
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="leads" element={<LeadsPage />} />
+                <Route path="chat" element={<AdminChat />} />
+                <Route path="promocodes" element={<PromoCodesPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="products" element={<ProductsPage />} />
+                <Route path="quotes" element={<QuotesPage />} />
+                <Route path="orders" element={<OrdersPage />} />
+                <Route path="blog" element={<BlogAdminPage />} />
+                <Route path="blog/new" element={<BlogFormPage />} />
+                <Route path="blog/edit/:slug" element={<BlogFormPage />} />
+                <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
+                <Route path="reports" element={<div>Reports Page (Coming Soon)</div>} />
+              </Route>
+            </Routes>
+          </ErrorBoundary>
         </TooltipProvider>
       </QueryClientProvider>
     </HelmetProvider>
