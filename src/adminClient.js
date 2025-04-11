@@ -1,8 +1,14 @@
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:3000', {
-  withCredentials: true,
-});
+// Determine the backend URL based on the environment
+const socket = io(
+  import.meta.env.MODE === 'development'
+    ? 'http://localhost:3000'
+    : 'https://eco-packaging-backend.onrender.com',
+  {
+    withCredentials: true,
+  }
+);
 
 socket.on('connect', () => {
   console.log('Admin connected:', socket.id);
@@ -29,3 +35,5 @@ socket.on('chat-request', (data) => {
 socket.on('message', (data) => {
   console.log('Message from user:', data);
 });
+
+export default socket; // Export the socket instance if needed elsewhere
