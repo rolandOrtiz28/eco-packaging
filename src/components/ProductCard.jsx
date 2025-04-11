@@ -45,27 +45,35 @@ function ProductCard({ product, isDistributor = false, onQuoteRequest }) {
                 1 Case: {product.pcsPerCase}pcs
               </p>
               {/* Display pricing tiers */}
-              {product.details.pricing.map((priceTier, index) => {
-                const units = extractUnitsPerCase(priceTier.case);
-                // Parse pricePerUnit as a number if possible, otherwise use the string
-                const parsedPricePerUnit = parseFloat(priceTier.pricePerUnit);
-                const pricePerCase = !isNaN(parsedPricePerUnit)
-                  ? (parsedPricePerUnit * units).toFixed(2)
-                  : "Please contact office";
-                return (
-                  <p key={index} className="text-sm text-gray-700">
-                    {priceTier.case.replace(/\(.*?\)/, "")}:{" "}
-                    {!isNaN(parsedPricePerUnit) ? (
-                      <>
-                        <span>¢ {parsedPricePerUnit.toFixed(2)} ea - </span>
-                        <span className="text-eco font-bold">${pricePerCase} per case</span>
-                      </>
-                    ) : (
-                      <span className="text-eco font-bold">{pricePerCase}</span>
-                    )}
-                  </p>
-                );
-              })}
+              {(() => {
+  const pricing = product.details?.pricing;
+  if (!Array.isArray(pricing)) {
+    console.warn("⚠️ Invalid pricing data for product:", product);
+    return <p className="text-red-500 text-sm">⚠️ Pricing unavailable</p>;
+  }
+
+  return pricing.map((priceTier, index) => {
+    const units = extractUnitsPerCase(priceTier.case);
+    const parsedPricePerUnit = parseFloat(priceTier.pricePerUnit);
+    const pricePerCase = !isNaN(parsedPricePerUnit)
+      ? (parsedPricePerUnit * units).toFixed(2)
+      : "Please contact office";
+
+    return (
+      <p key={index} className="text-sm text-gray-700">
+        {priceTier.case.replace(/\(.*?\)/, "")}:{" "}
+        {!isNaN(parsedPricePerUnit) ? (
+          <>
+            <span>¢ {parsedPricePerUnit.toFixed(2)} ea - </span>
+            <span className="text-eco font-bold">${pricePerCase} per case</span>
+          </>
+        ) : (
+          <span className="text-eco font-bold">{pricePerCase}</span>
+        )}
+      </p>
+    );
+  });
+})()}
             </div>
           ) : (
             <div className="mb-4">
