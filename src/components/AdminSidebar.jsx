@@ -8,8 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import io from 'socket.io-client';
 
 function AdminSidebar() {
-  const { logout } = useAuth();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState({
@@ -21,6 +21,8 @@ function AdminSidebar() {
     chat: 0,
   });
   const socketRef = useRef(null);
+
+
 
   const API_BASE_URL =
     window.location.hostname === "localhost"
@@ -116,11 +118,8 @@ function AdminSidebar() {
 
   const handleLogout = () => {
     logout();
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-    navigate("/login");
+    navigate("/");
+    closeMenu();
   };
 
   return (

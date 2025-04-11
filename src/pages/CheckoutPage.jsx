@@ -148,13 +148,37 @@ const CheckoutPage = () => {
     return true;
   };
 
-  const handleDetailsSubmit = (e) => {
+  const handleDetailsSubmit = async (e) => {
     e.preventDefault();
-    if (validateDetails()) {
+    if (!validateDetails()) return;
+  
+    try {
+      const updatedData = {
+        name: `${firstName} ${lastName}`.trim(),
+        email,
+        phone,
+        address,
+        city,
+        state,
+        zipCode,
+        country,
+      };
+  
+      if (user && saveInfo) {
+        await updateUserProfile(user.id, updatedData);
+        const updatedUser = await getUserProfile(user.id);
+        setUser(updatedUser); // <-- this re-populates on next visit
+        toast.success("Your info has been saved for future orders.");
+      }
+  
       setStep("payment");
       window.scrollTo(0, 0);
+    } catch (err) {
+      console.error("Error updating user profile during checkout:", err);
+      toast.error("Failed to save your information. Please try again.");
     }
   };
+  
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();

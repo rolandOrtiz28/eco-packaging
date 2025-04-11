@@ -61,7 +61,7 @@ function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(5)].map((_, i) => ( // Increased to 5 for the new StatCard
               <Card key={i} className="border-eco-light">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <Skeleton className="h-4 w-20 rounded-md" />
@@ -127,41 +127,50 @@ function DashboardPage() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-          <StatCard 
-            title="Total Visits" 
-            value={analytics.totalVisits?.toLocaleString() || 0} 
-            icon={<User className="h-4 w-4 text-blue-600" />} 
-            change="12.3" 
-            iconBg="bg-blue-50"
-            color={COLORS.blue}
-          />
-          <StatCard 
-            title="Leads Captured" 
-            value={analytics.leadsCount?.toLocaleString() || 0} 
-            icon={<Users className="h-4 w-4 text-purple-600" />} 
-            change="2.1" 
-            iconBg="bg-purple-50"
-            color={COLORS.purple}
-          />
-          <StatCard 
-            title="Quote Requests" 
-            value={analytics.quoteRequests?.toLocaleString() || 0} 
-            icon={<FileText className="h-4 w-4 text-orange-600" />} 
-            change="28.5" 
-            iconBg="bg-orange-50"
-            color={COLORS.orange}
-          />
-          <StatCard 
-            title="Conversion Rate" 
-            value={analytics.conversionRate?.toFixed(1) || 0} 
-            suffix="%" 
-            icon={<ShoppingBag className="h-4 w-4 text-green-600" />} 
-            change="0.7" 
-            iconBg="bg-green-50"
-            color={COLORS.green}
-          />
-        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+  <StatCard 
+    title="Total Visits" 
+    value={analytics.totalVisits?.toLocaleString() || 0} 
+    icon={<User className="h-4 w-4 text-blue-600" />} 
+    change={analytics.totalVisitsChange || 0} // Use backend-provided change
+    iconBg="bg-blue-50"
+    color={COLORS.blue}
+  />
+  <StatCard 
+    title="Leads Captured" 
+    value={analytics.leadsCount?.toLocaleString() || 0} 
+    icon={<Users className="h-4 w-4 text-purple-600" />} 
+    change={analytics.leadsCountChange || 0} // Use backend-provided change
+    iconBg="bg-purple-50"
+    color={COLORS.purple}
+  />
+  <StatCard 
+    title="Quote Requests" 
+    value={analytics.quoteRequests?.toLocaleString() || 0} 
+    icon={<FileText className="h-4 w-4 text-orange-600" />} 
+    change={analytics.quoteRequestsChange || 0} // Use backend-provided change
+    iconBg="bg-orange-50"
+    color={COLORS.orange}
+  />
+  <StatCard 
+    title="Lead Conversion Rate" 
+    value={analytics.leadConversionRate?.toFixed(1) || 0} 
+    suffix="%" 
+    icon={<ShoppingBag className="h-4 w-4 text-green-600" />} 
+    change={analytics.leadConversionRateChange || 0} // Use backend-provided change
+    iconBg="bg-green-50"
+    color={COLORS.green}
+  />
+  <StatCard 
+    title="Sales Conversion Rate" 
+    value={analytics.salesConversionRate?.toFixed(1) || 0} 
+    suffix="%" 
+    icon={<ShoppingBag className="h-4 w-4 text-green-600" />} 
+    change={analytics.salesConversionRateChange || 0} // Use backend-provided change
+    iconBg="bg-green-50"
+    color={COLORS.green}
+  />
+</div>
 
         <Tabs defaultValue="traffic" className="space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -219,16 +228,16 @@ function DashboardPage() {
             />
           </TabsContent>
           <TabsContent value="conversions">
-            <ChartCard 
-              title="Conversion Trends"
-              description="Monthly lead conversions over time"
-              data={analytics.conversions}
-              chartType="line"
-              color={COLORS.green}
-              emptyMessage="No conversions data available"
-              period={period}
-            />
-          </TabsContent>
+  <ChartCard 
+    title="Conversion Trends"
+    description="Monthly lead conversions over time"
+    data={analytics.conversions}
+    chartType="line"
+    color={COLORS.green}
+    emptyMessage="No conversions data available"
+    period={period}
+  />
+</TabsContent>
           <TabsContent value="pagevisits">
             <ChartCard 
               title="Page Visit Distribution"
@@ -398,12 +407,78 @@ function ChartCard({ title, description, data, chartType, color, emptyMessage, p
 
 function processChartData(data, period, chartType) {
   if (!data) return [];
-  return data.map(item => ({
+
+  // Base mapping for data
+  let processedData = data.map(item => ({
     name: item.name,
     value: chartType === "horizontalBar" ? item.visits : item.value || item.visits
   }));
-}
 
+  // Adjust data based on period
+  if (chartType === "horizontalBar") {
+    // For Page Visit Distribution (visitsByPage), name is the page URL, so no further aggregation by period
+    return processedData;
+  }
+
+  if (chartType === "bar" && period !== "month") {
+    // For Traffic Overview (visitsByTime), adjust by period
+    if (period === 'week') {
+      // Aggregate by week
+      const weeklyData = processedData.reduce((acc, item) => {
+        const date = new Date(item.name);
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay()); // Start of the week (Sunday)
+        const key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+        if (!acc[key]) {
+          acc[key] = { name: key, value: 0 };
+        }
+        acc[key].value += item.value;
+        return acc;
+      }, {});
+      processedData = Object.values(weeklyData);
+    } else if (period === 'year') {
+      // Aggregate by year
+      const yearlyData = processedData.reduce((acc, item) => {
+        const year = item.name.split('-')[0];
+        if (!acc[year]) {
+          acc[year] = { name: year, value: 0 };
+        }
+        acc[year].value += item.value;
+        return acc;
+      }, {});
+      processedData = Object.values(yearlyData);
+    }
+  } else if (chartType === "line") {
+    if (period === 'week') {
+      // Aggregate by week (simplified: group by month for now, as weekly data requires more complex logic)
+      const weeklyData = processedData.reduce((acc, item) => {
+        const [month, year] = item.name.split(' ');
+        if (!month || !year) return acc; // Skip if name is not in "Month Year" format
+        const key = `${month} ${year}`;
+        if (!acc[key]) {
+          acc[key] = { name: key, value: 0 };
+        }
+        acc[key].value += item.value;
+        return acc;
+      }, {});
+      processedData = Object.values(weeklyData);
+    } else if (period === 'year') {
+      // Aggregate by year
+      const yearlyData = processedData.reduce((acc, item) => {
+        const [, year] = item.name.split(' ');
+        if (!year) return acc; // Skip if year is undefined
+        if (!acc[year]) {
+          acc[year] = { name: year, value: 0 };
+        }
+        acc[year].value += item.value;
+        return acc;
+      }, {});
+      processedData = Object.values(yearlyData);
+    }
+  }
+
+  return processedData.sort((a, b) => a.name.localeCompare(b.name));
+}
 function PeriodButton({ active, onClick, children }) {
   return (
     <button

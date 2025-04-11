@@ -11,7 +11,7 @@ import axios from 'axios';
 
 function ChatWidget() {
   const [chatState, setChatState] = useState(() => {
-    return localStorage.getItem("chatState") || "closed";
+    return localStorage.getItem("chatState") === "open" ? "open" : "closed";
   });
   const [messages, setMessages] = useState(() => {
     const savedMessages = localStorage.getItem("chatMessages");
@@ -27,7 +27,8 @@ function ChatWidget() {
   const [isHumanConnected, setIsHumanConnected] = useState(false);
   const [showInfoForm, setShowInfoForm] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
-  const [isFirstMessage, setIsFirstMessage] = useState(true); // Track first message
+  const [isFirstMessage, setIsFirstMessage] = useState(true);
+  const [isSubmittingFollowUp, setIsSubmittingFollowUp] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const adminTimeoutRef = useRef(null);
@@ -84,13 +85,11 @@ function ChatWidget() {
   }, [messages]);
 
   useEffect(() => {
-    // Save name and email to localStorage whenever they change
     if (name) localStorage.setItem("chatName", name);
     if (email) localStorage.setItem("chatEmail", email);
   }, [name, email]);
 
   useEffect(() => {
-    // Initialize Socket.IO connection
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
       reconnection: true,
@@ -139,7 +138,7 @@ function ChatWidget() {
       console.log('Received no-admins event:', data);
       setAwaitingHuman(false);
       setShowFollowUpForm(true);
-      setIsFirstMessage(true); // Re-enable AI responses
+      setIsFirstMessage(true);
       setMessages((prev) => [
         ...prev,
         {
@@ -170,7 +169,7 @@ function ChatWidget() {
       console.log('Received inactivity-disconnect event:', data);
       setIsHumanConnected(false);
       setAwaitingHuman(false);
-      setIsFirstMessage(true); // Re-enable AI responses
+      setIsFirstMessage(true);
       setMessages((prev) => {
         if (prev.some(msg => msg.text === data.message && msg.sender === "bot")) {
           return prev;
@@ -190,7 +189,6 @@ function ChatWidget() {
     socketRef.current.on('message', (data) => {
       console.log('Received message from server:', data);
       setMessages((prev) => {
-        // Check for duplicates based on text, sender, and name
         const lastMessage = prev[prev.length - 1];
         const isDuplicate =
           lastMessage &&
@@ -216,7 +214,6 @@ function ChatWidget() {
       });
     });
   
-    // Add a method to leave a room
     socketRef.current.leaveRoom = (roomId) => {
       if (roomId) {
         console.log(`Leaving room for userId: ${roomId}`);
@@ -265,7 +262,7 @@ function ChatWidget() {
         setMessages((prev) => prev.length === 0 ? [initialMessage] : prev);
         setShowInfoForm(false);
       }
-      setIsFirstMessage(true); // Reset isFirstMessage when chat opens
+      setIsFirstMessage(true);
     }
   }, [chatState, isAuthenticated, isLoadingUser, name, email]);
 
@@ -279,19 +276,19 @@ function ChatWidget() {
           }, { withCredentials: true });
           setEmail(user.email);
           setName(user.name);
-          setUserId(null); // Reset userId to ensure a new session
-          socketRef.current.leaveRoom(userId); // Leave the old room
+          setUserId(null);
+          socketRef.current.leaveRoom(userId);
           setMessages([initialMessage]);
-          setIsFirstMessage(true); // Reset isFirstMessage
+          setIsFirstMessage(true);
           toast.success("Chat session updated with your account information.");
         } catch (error) {
           console.error("Error updating chat session email:", error);
           setEmail(user.email);
           setName(user.name);
-          setUserId(null); // Reset userId to start fresh
-          socketRef.current.leaveRoom(userId); // Leave the old room
+          setUserId(null);
+          socketRef.current.leaveRoom(userId);
           setMessages([initialMessage]);
-          setIsFirstMessage(true); // Reset isFirstMessage
+          setIsFirstMessage(true);
           toast.error("Failed to update chat session with your account information. Starting a new session.");
         }
       };
@@ -326,21 +323,16 @@ function ChatWidget() {
   }, [messages]);
 
   useEffect(() => {
-    // Reset chat on logout
     if (!isAuthenticated && !authLoading) {
-      setMessages([]); // Clear messages on logout
-      localStorage.removeItem("chatMessages"); // Clear from localStorage
-      setIsFirstMessage(true); // Reset isFirstMessage
+      setMessages([]);
+      localStorage.removeItem("chatMessages");
+      setIsFirstMessage(true);
       closeChat();
     }
   }, [isAuthenticated, authLoading]);
 
   const toggleChat = () => {
-    if (chatState === "closed" || chatState === "minimized") {
-      setChatState("open");
-    } else {
-      setChatState("minimized");
-    }
+    setChatState(chatState === "closed" ? "open" : "closed");
   };
 
   const closeChat = () => {
@@ -350,9 +342,9 @@ function ChatWidget() {
     setShowFollowUpForm(false);
     setIsHumanConnected(false);
     setUserId(null);
-    socketRef.current.leaveRoom(userId); // Leave the current room on close
+    socketRef.current.leaveRoom(userId);
     setShowInfoForm(false);
-    setIsFirstMessage(true); // Reset isFirstMessage
+    setIsFirstMessage(true);
     if (adminTimeoutRef.current) {
       clearTimeout(adminTimeoutRef.current);
     }
@@ -380,7 +372,7 @@ function ChatWidget() {
       toast.success("Information submitted successfully!");
       setShowInfoForm(false);
       setMessages([initialMessage]);
-      setIsFirstMessage(true); // Reset isFirstMessage
+      setIsFirstMessage(true);
     } catch (error) {
       console.error("Error saving user info:", error);
       toast.error("Failed to save your information. Please try again.");
@@ -494,6 +486,7 @@ function ChatWidget() {
       toast.error("Please provide a valid email address");
       return;
     }
+    setIsSubmittingFollowUp(true);
   
     try {
       await submitChat({
@@ -506,12 +499,14 @@ function ChatWidget() {
         return [...prev, thankYouMessage];
       });
       setShowFollowUpForm(false);
-      setAwaitingHuman(false); // Reset to allow AI chat
-      setIsHumanConnected(false); // Reset to allow AI chat
-      // Do not close the chat; let the user continue with the AI
+      setAwaitingHuman(false);
+      setIsHumanConnected(false);
+      setIsFirstMessage(false); 
     } catch (error) {
       console.error("Error submitting follow-up email:", error);
       toast.error("Failed to submit email. Please try again.");
+    } finally{
+      setIsSubmittingFollowUp(false);
     }
   };
 
@@ -542,11 +537,9 @@ function ChatWidget() {
         <MessageSquare size={24} />
       </button>
 
-      {chatState !== "closed" && (
+      {chatState === "open" && (
         <div
-          className={`fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white rounded-xl shadow-xl transition-all duration-300 flex flex-col overflow-hidden ${
-            chatState === "minimized" ? "h-14" : "h-[650px]"
-          }`}
+          className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white rounded-xl shadow-xl transition-all duration-300 flex flex-col overflow-hidden h-[650px]"
         >
           <div className="bg-eco text-white p-3 flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -559,17 +552,6 @@ function ChatWidget() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={toggleChat}
-                className="text-white/80 hover:text-white"
-                aria-label="Minimize chat"
-              >
-                {chatState === "minimized" ? (
-                  <MessageSquare size={18} />
-                ) : (
-                  <span className="text-xl leading-none">−</span>
-                )}
-              </button>
-              <button
                 onClick={closeChat}
                 className="text-white/80 hover:text-white"
                 aria-label="Close chat"
@@ -579,134 +561,134 @@ function ChatWidget() {
             </div>
           </div>
 
-          {chatState !== "minimized" && (
-            <>
-              <div className="flex-grow p-4 overflow-y-auto bg-slate-50">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`mb-4 flex ${
-                      message.sender === "user" ? "justify-end" : "justify-start"
+          <div className="flex-grow p-4 overflow-y-auto bg-slate-50">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`mb-4 flex ${
+                  message.sender === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`rounded-lg p-3 max-w-[80%] ${
+                    message.sender === "user"
+                      ? "bg-eco text-white"
+                      : "bg-white shadow-sm border"
+                  }`}
+                >
+                  <p
+                    className={`text-xs font-semibold ${
+                      message.sender === "user" ? "text-white/70" : "text-muted-foreground"
                     }`}
                   >
-                    <div
-                      className={`rounded-lg p-3 max-w-[80%] ${
-                        message.sender === "user"
-                          ? "bg-eco text-white"
-                          : "bg-white shadow-sm border"
-                      }`}
-                    >
-                      <p
-                        className={`text-xs font-semibold ${
-                          message.sender === "user" ? "text-white/70" : "text-muted-foreground"
-                        }`}
-                      >
-                        {message.name}
-                      </p>
-                      <p className="text-sm">{message.text}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          message.sender === "user" ? "text-white/70" : "text-muted-foreground"
-                        }`}
-                      >
-                        {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                {showInfoForm && !isAuthenticated && (
-                  <div className="mb-4 flex justify-start">
-                    <div className="bg-white shadow-sm border rounded-lg p-3 max-w-[80%]">
-                      <form onSubmit={handleSubmitInfo} className="space-y-4">
-                        <div>
-                          <Input
-                            id="name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Your name"
-                            required
-                            className="w-full border-gray-300"
-                          />
-                        </div>
-                        <div>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Your email"
-                            required
-                            className="w-full border-gray-300"
-                          />
-                        </div>
-                        <Button type="submit" className="w-full bg-eco hover:bg-eco-dark">
-                          Submit
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-                )}
-                {awaitingHuman && !isHumanConnected && (
-                  <div className="flex justify-center mb-4">
-                    <Loader2 className="animate-spin text-eco" size={24} />
-                    <p className="ml-2 text-sm text-muted-foreground">
-                      Waiting for a human agent...
-                    </p>
-                  </div>
-                )}
-                {showFollowUpForm && (
-                  <div className="mb-4 flex justify-start">
-                    <div className="bg-white shadow-sm border rounded-lg p-3 max-w-[80%]">
-                      <form onSubmit={handleFollowUpSubmit} className="space-y-4">
-                        <div>
-                          <Input
-                            id="followUpEmail"
-                            type="email"
-                            value={followUpEmail}
-                            onChange={(e) => setFollowUpEmail(e.target.value)}
-                            placeholder="your.email@example.com"
-                            required
-                            className="w-full border-gray-300"
-                          />
-                        </div>
-                        <Button type="submit" className="w-full bg-eco hover:bg-eco-dark">
-                          Submit Email
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-              {!showFollowUpForm && !showInfoForm && (
-                <div className="p-4 border-t">
-                  <div className="flex">
-                    <Textarea
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Type your message..."
-                      className="min-h-[44px] resize-none"
-                      rows={1}
-                      disabled={(awaitingHuman && !isHumanConnected) || isLoadingUser || (!isAuthenticated && showInfoForm)}
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      className="ml-2 h-[44px] w-[44px] p-0 bg-eco hover:bg-eco-dark"
-                      disabled={(!inputValue.trim() || (awaitingHuman && !isHumanConnected) || isLoadingUser || (!isAuthenticated && showInfoForm))}
-                    >
-                      <Send size={18} />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-center mt-2 text-muted-foreground">
-                    Type "talk to human" to connect with our support team
+                    {message.name}
+                  </p>
+                  <p className="text-sm">{message.text}</p>
+                  <p
+                    className={`text-xs mt-1 ${
+                      message.sender === "user" ? "text-white/70" : "text-muted-foreground"
+                    }`}
+                  >
+                    {new Date(message.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
-              )}
-            </>
+              </div>
+            ))}
+            {showInfoForm && !isAuthenticated && (
+              <div className="mb-4 flex justify-start">
+                <div className="bg-white shadow-sm border rounded-lg p-3 max-w-[80%]">
+                  <form onSubmit={handleSubmitInfo} className="space-y-4">
+                    <div>
+                      <Input
+                        id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Your name"
+                        required
+                        className="w-full border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Your email"
+                        required
+                        className="w-full border-gray-300"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full bg-eco hover:bg-eco-dark">
+                      Submit
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            )}
+            {awaitingHuman && !isHumanConnected && (
+              <div className="flex justify-center mb-4">
+                <Loader2 className="animate-spin text-eco" size={24} />
+                <p className="ml-2 text-sm text-muted-foreground">
+                  Waiting for a human agent...
+                </p>
+              </div>
+            )}
+            {showFollowUpForm && (
+              <div className="mb-4 flex justify-start">
+                <div className="bg-white shadow-sm border rounded-lg p-3 max-w-[80%]">
+                  <form onSubmit={handleFollowUpSubmit} className="space-y-4">
+                    <div>
+                      <Input
+                        id="followUpEmail"
+                        type="email"
+                        value={followUpEmail}
+                        onChange={(e) => setFollowUpEmail(e.target.value)}
+                        placeholder="your.email@example.com"
+                        required
+                        className="w-full border-gray-300"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full bg-eco hover:bg-eco-dark" disabled={isSubmittingFollowUp}>
+  {isSubmittingFollowUp ? (
+    <Loader2 className="animate-spin mx-auto" size={18} />
+  ) : (
+    "Submit Email"
+  )}
+</Button>
+                  </form>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          {!showFollowUpForm && !showInfoForm && (
+            <div className="p-4 border-t">
+              <div className="flex">
+                <Textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type your message..."
+                  className="min-h-[44px] resize-none"
+                  rows={1}
+                  disabled={(awaitingHuman && !isHumanConnected) || isLoadingUser || (!isAuthenticated && showInfoForm)}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  className="ml-2 h-[44px] w-[44px] p-0 bg-eco hover:bg-eco-dark"
+                  disabled={(!inputValue.trim() || (awaitingHuman && !isHumanConnected) || isLoadingUser || (!isAuthenticated && showInfoForm))}
+                >
+                  <Send size={18} />
+                </Button>
+              </div>
+              <p className="text-xs text-center mt-2 text-muted-foreground">
+                Type "talk to human" to connect with our support team
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -715,7 +697,3 @@ function ChatWidget() {
 }
 
 export default ChatWidget;
-
-
-
-// base

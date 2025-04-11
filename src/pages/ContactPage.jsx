@@ -13,42 +13,59 @@ const ContactPage = () => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    console.log('DEBUG: Submitting contact form with data:', { name, email, phone, subject, message });
+
     if (!name || !email || !message) {
+      console.log('DEBUG: Validation failed: Missing required fields');
       toast.error("Please fill in all required fields");
       return;
     }
-    
+
     if (!email.includes('@') || !email.includes('.')) {
+      console.log('DEBUG: Validation failed: Invalid email address');
       toast.error("Please provide a valid email address");
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      
-      await submitContact({
+      const response = await submitContact({
         name,
         email,
         phone,
         subject,
-        message
+        message,
       });
-      
-      toast.success("Your message has been sent. We'll get back to you soon!");
-      
+
+      console.log('DEBUG: Received response from /api/contact:', response);
+
+      // Check if the response indicates a partial success (email failed but contact saved)
+      if (response.message && response.message.includes('failed to send email')) {
+        console.log('DEBUG: Partial success - contact saved but email failed:', response.error);
+        toast.warning(response.message);
+      } else {
+        console.log('DEBUG: Full success - contact and email sent');
+        toast.success("Your message has been sent. We'll get back to you soon!");
+      }
+
       setName("");
       setEmail("");
       setPhone("");
       setSubject("");
       setMessage("");
     } catch (error) {
-      console.error("Error submitting contact form:", error);
+      console.error('DEBUG: Error submitting contact form:', {
+        message: error.message,
+        response: error.response ? error.response.data : 'No response data',
+        status: error.response ? error.response.status : 'No status',
+      });
       toast.error("Failed to send message. Please try again.");
     } finally {
+      console.log('DEBUG: Submission complete, resetting isSubmitting state');
       setIsSubmitting(false);
     }
   };
@@ -65,7 +82,7 @@ const ContactPage = () => {
           </div>
         </div>
       </section>
-      
+
       <section className="py-12">
         <div className="container-custom">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -75,11 +92,11 @@ const ContactPage = () => {
               </div>
               <h3 className="text-lg font-semibold mb-1">Phone</h3>
               <p className="text-muted-foreground mb-4">Mon-Fri, 9am to 6pm EST</p>
-              <a href="tel:+15551234567" className="text-lg text-eco font-medium hover:underline">
-                +1 (555) 123-4567
+              <a href="tel:+15163609888" className="text-lg text-eco font-medium hover:underline">
+                +1 (516) 360-9888
               </a>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-sm p-6 text-center">
               <div className="w-12 h-12 bg-eco rounded-full flex items-center justify-center mx-auto mb-4">
                 <Mail className="h-5 w-5 text-white" />
@@ -87,10 +104,10 @@ const ContactPage = () => {
               <h3 className="text-lg font-semibold mb-1">Email</h3>
               <p className="text-muted-foreground mb-4">We'll respond as soon as possible</p>
               <a href="mailto:info@ecopackagingproducts.com" className="text-eco font-medium hover:underline break-words">
-                info@ecopackagingproducts.com
+                contact@bagstoryusa.com
               </a>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-sm p-6 text-center">
               <div className="w-12 h-12 bg-eco rounded-full flex items-center justify-center mx-auto mb-4">
                 <MapPin className="h-5 w-5 text-white" />
@@ -98,12 +115,12 @@ const ContactPage = () => {
               <h3 className="text-lg font-semibold mb-1">Office</h3>
               <p className="text-muted-foreground mb-4">Our headquarters location</p>
               <address className="not-italic text-eco font-medium">
-                123 Green Street, Suite 456<br />
-                New York, NY 10001
+                176 Central Ave Suite 9 Farmingdale<br />
+                New York, NY 11735
               </address>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="border-b px-6 py-4">
@@ -137,7 +154,7 @@ const ContactPage = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium mb-2">
@@ -163,7 +180,7 @@ const ContactPage = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="mb-6">
                   <label htmlFor="message" className="block text-sm font-medium mb-2">
                     Message <span className="text-destructive">*</span>
@@ -177,7 +194,7 @@ const ContactPage = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="flex items-start mb-6">
                   <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5 mr-2 flex-shrink-0" />
                   <p className="text-sm text-muted-foreground">
@@ -185,9 +202,9 @@ const ContactPage = () => {
                     We'll use your information to process your request and won't share it with third parties.
                   </p>
                 </div>
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full bg-eco hover:bg-eco-dark"
                   disabled={isSubmitting}
                 >
@@ -208,7 +225,7 @@ const ContactPage = () => {
                 </Button>
               </form>
             </div>
-            
+
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center mb-4">
@@ -230,30 +247,30 @@ const ContactPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center mb-4">
                   <MapPin className="h-5 w-5 text-eco mr-2" />
                   <h3 className="font-semibold">Our Location</h3>
                 </div>
                 <div className="rounded-md overflow-hidden h-80 bg-muted">
-                  <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.9663095343077!2d-74.0059418!3d40.7127847!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c259bf5c1654f3%3A0xc80f9cfce5383d5d!2sNew%20York%2C%20NY%2C%20USA!5e0!3m2!1sen!2sus!4v1681162312345!5m2!1sen!2sus" 
-                    width="100%" 
-                    height="100%" 
-                    style={{ border: 0 }} 
-                    allowFullScreen 
-                    loading="lazy" 
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3025.044310259302!2d-73.4468708242827!3d40.7310075388195!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89e82d6cbe9ac199%3A0x3a7fcf8ab40a7d11!2s176%20Central%20Ave%20%239%2C%20Farmingdale%2C%20NY%2011735%2C%20USA!5e0!3m2!1sen!2sus!4v1712732817271!5m2!1sen!2sus"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
-                    title="Eco Packaging Products Inc. location"
-                  ></iframe>
+                    title="Edit Edge location"
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
-      
+
       <section className="py-12 bg-eco-paper">
         <div className="container-custom">
           <div className="text-center mb-12">
@@ -262,7 +279,7 @@ const ContactPage = () => {
               Find quick answers to common questions about our products and services
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-3">What are your minimum order quantities?</h3>
@@ -271,7 +288,7 @@ const ContactPage = () => {
                 For bulk orders, MOQs typically range from 500-1000 units depending on the product and customization requirements.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-3">Do you offer custom branding?</h3>
               <p className="text-muted-foreground">
@@ -279,7 +296,7 @@ const ContactPage = () => {
                 For custom orders, please request a quote through our distributor page or contact us directly.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-3">What shipping options do you offer?</h3>
               <p className="text-muted-foreground">
@@ -287,7 +304,7 @@ const ContactPage = () => {
                 and international shipping options. Free shipping is available on retail orders over $50.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-3">What materials do you use?</h3>
               <p className="text-muted-foreground">

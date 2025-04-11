@@ -9,6 +9,8 @@ const api = axios.create({
   withCredentials: true,
 });
 
+
+// PRODUCTS
 export const getProducts = async () => {
   try {
     const response = await api.get('/products');
@@ -21,7 +23,7 @@ export const getProducts = async () => {
 
 export const getProduct = async (id) => {
   try {
-    const response = await api.get(`/product/${id}`);
+    const response = await api.get(`/products/product/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching product with ID ${id}:`, error);
@@ -32,7 +34,7 @@ export const getProduct = async (id) => {
 
 export const getRelatedProducts = async (id) => {
   try {
-    const response = await api.get(`/related-products/${id}`);
+    const response = await api.get(`/products/related-products/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching related products for product ID ${id}:`, error);
@@ -42,7 +44,7 @@ export const getRelatedProducts = async (id) => {
 
 export const getDistributorProducts = async () => {
   try {
-    const response = await api.get('/distributor-products');
+    const response = await api.get('/products/distributor-products');
     return response.data;
   } catch (error) {
     console.error('Error fetching distributor products:', error);
@@ -106,7 +108,7 @@ export const getBlogPost = async (id) => {
 
 export const getRelatedPosts = async (id) => {
   try {
-    const response = await api.get(`/related-posts/${id}`);
+    const response = await api.get(`/blog-post/related-posts/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching related posts for blog post ID ${id}:`, error);
@@ -117,7 +119,7 @@ export const getRelatedPosts = async (id) => {
 export const login = async (data) => {
   try {
     console.log("Logging in user:", data);
-    const response = await api.post('/login', data);
+    const response = await api.post('/auth/login', data);
     return response.data;
   } catch (error) {
     console.error('Error during login:', error);
@@ -128,7 +130,7 @@ export const login = async (data) => {
 export const register = async (data) => {
   try {
     console.log("Registering user:", data);
-    const response = await api.post('/register', data);
+    const response = await api.post('/auth/register', data);
     return response.data;
   } catch (error) {
     console.error('Error during registration:', error);
@@ -158,7 +160,7 @@ export const updateUserProfile = async (userId, updatedData) => {
 
 export const getOrders = async () => {
   try {
-    const response = await api.get('/order');
+    const response = await api.get('/orders');
     return response.data;
   } catch (error) {
     console.error('Error fetching orders:', error);
@@ -281,7 +283,7 @@ export const createOrder = async (userId, orderData) => {
 
 export const submitQuote = async (data) => {
   try {
-    const response = await api.post('/quote', data);
+    const response = await api.post('/products/quote', data);
     return response.data;
   } catch (error) {
     console.error('Error submitting quote:', error);
@@ -291,7 +293,7 @@ export const submitQuote = async (data) => {
 
 export const getQuotes = async () => {
   try {
-    const response = await api.get('/quotes');
+    const response = await api.get('/products/quotes');
     return response.data;
   } catch (error) {
     console.error('Error fetching quotes:', error);
@@ -301,7 +303,7 @@ export const getQuotes = async () => {
 
 export const updateQuoteStatus = async (id, status) => {
   try {
-    const response = await api.put(`/quotes/${id}/status`, { status });
+    const response = await api.put(`/products/quotes/${id}/status`, { status });
     return response.data;
   } catch (error) {
     console.error(`Error updating quote status with ID ${id}:`, error);
@@ -311,7 +313,7 @@ export const updateQuoteStatus = async (id, status) => {
 
 export const sendQuoteReply = async (id, replyMessage) => {
   try {
-    const response = await api.post(`/quotes/${id}/reply`, { replyMessage });
+    const response = await api.post(`/products/quotes/${id}/reply`, { replyMessage });
     return response.data;
   } catch (error) {
     console.error(`Error sending reply for quote with ID ${id}:`, error);
@@ -321,7 +323,7 @@ export const sendQuoteReply = async (id, replyMessage) => {
 
 export const deleteQuote = async (id) => {
   try {
-    const response = await api.delete(`/quotes/${id}`);
+    const response = await api.delete(`/products/quotes/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error deleting quote with ID ${id}:`, error);
@@ -372,10 +374,20 @@ export const getLeads = async () => {
 
 export const getUsers = async () => {
   try {
-    const response = await api.get('/users');
+    const response = await api.get('/leads/users');
     return response.data;
   } catch (error) {
     console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+export const updateLeadStatus = async (id, status) => {
+  try {
+    const response = await api.put(`/leads/${id}/status`, { status });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating lead status for ID ${id}:`, error);
     throw error;
   }
 };

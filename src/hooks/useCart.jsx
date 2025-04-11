@@ -6,24 +6,27 @@ export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => {
     const savedCart = localStorage.getItem("cartItems");
     let items = savedCart ? JSON.parse(savedCart) : [];
-    // Fix items with undefined quantities
+    // Ensure quantity is set
     items = items.map(item => ({
       ...item,
       quantity: item.quantity !== undefined ? item.quantity : 1,
     }));
     return items;
   });
+
   const [discount, setDiscount] = useState(() => {
-    const savedDiscount = localStorage.getItem("cartDiscount");
+    const savedDiscount = localStorage.getItem("cartDiscount"); // ✅ this is the correct key
     return savedDiscount ? parseFloat(savedDiscount) : 0;
   });
 
+  // Sync cart items to localStorage
   useEffect(() => {
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
 
+  // Sync discount to localStorage
   useEffect(() => {
-    localStorage.setItem("cartDiscount", discount.toString());
+    localStorage.setItem("cartDiscount", discount.toString()); // ✅ same key
   }, [discount]);
 
   const addToCart = (product, quantity) => {
@@ -41,21 +44,31 @@ export function CartProvider({ children }) {
     });
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+  const removeFromCart = (id) => {
+    setCartItems((prev) => {
+      const updatedCart = prev.filter((item) => item.id !== id);
+      if (updatedCart.length === 0) {
+        setDiscount(0); // Reset discount if cart becomes empty
+      }
+      return updatedCart;
+    });
   };
 
   const updateQuantity = (productId, quantity) => {
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
+        item.id === productId
+          ? { ...item, quantity: Math.max(1, quantity) }
+          : item
       )
     );
   };
 
   const clearCart = () => {
     setCartItems([]);
-    setDiscount(0);
+    setDiscount(0); // ✅ reset discount
+    localStorage.removeItem("cartItems");
+    localStorage.removeItem("cartDiscount"); // ✅ this was the broken key before
   };
 
   const applyDiscount = (discountValue) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/utils/api";
+import { api, createPromoCode } from "@/utils/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,7 +71,7 @@ const PromoCodesPage = () => {
         maxDiscount: newPromo.maxDiscount ? parseFloat(newPromo.maxDiscount) : undefined,
         usageLimit: newPromo.usageLimit ? parseInt(newPromo.usageLimit) : undefined,
       };
-      const response = await api.createPromoCode(promoData);
+      const response = await createPromoCode(promoData); // Use createPromoCode directly
       setPromoCodes(prev => [...prev, response]);
       setNewPromo({
         code: "",
