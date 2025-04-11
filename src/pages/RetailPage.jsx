@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Filter, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,10 @@ import {
 } from "@/components/ui/select";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/utils/api";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const RetailPage = () => {
   const [products, setProducts] = useState([]);
@@ -21,11 +25,15 @@ const RetailPage = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [priceRange, setPriceRange] = useState([0, 5.50]); // Updated to reflect new price range
+  const [priceRange, setPriceRange] = useState([0, 5.50]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [sortOption, setSortOption] = useState("featured");
 
   const [categories, setCategories] = useState([]);
+
+  const headerRef = useRef(null);
+  const filterRef = useRef(null);
+  const productsRef = useRef(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -94,6 +102,68 @@ const RetailPage = () => {
     setFilteredProducts(result);
   }, [products, searchQuery, selectedCategories, priceRange, sortOption]);
 
+  useEffect(() => {
+    // Header Animation
+    gsap.fromTo(
+      headerRef.current.children,
+      { opacity: 0, y: 30 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: headerRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    // Filter Animation
+    gsap.fromTo(
+      filterRef.current,
+      { opacity: 0, x: -30 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: 1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: filterRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    // Products Animation
+    if (!isLoading) {
+      gsap.fromTo(
+        productsRef.current.children,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          stagger: 0.15,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: productsRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      gsap.killTweensOf([headerRef.current, filterRef.current, productsRef.current]);
+    };
+  }, [isLoading]);
+
   const toggleCategory = (category) => {
     setSelectedCategories((prev) =>
       prev.includes(category)
@@ -113,7 +183,7 @@ const RetailPage = () => {
     <div>
       <section className="bg-eco py-16">
         <div className="container-custom">
-          <div className="text-center text-white">
+          <div ref={headerRef} className="text-center text-white">
             <h1 className="text-4xl font-bold mb-4">Eco-Friendly Packaging</h1>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">
               Browse our collection of sustainable packaging solutions for your retail needs
@@ -149,7 +219,7 @@ const RetailPage = () => {
               </Select>
             </div>
 
-            <div className={`lg:w-1/4 lg:block ${showFilters ? "block" : "hidden"}`}>
+            <div ref={filterRef} className={`lg:w-1/4 lg:block ${showFilters ? "block" : "hidden"}`}>
               <div className="bg-white p-6 rounded-lg shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold">Filters</h2>
@@ -188,7 +258,7 @@ const RetailPage = () => {
                   <label className="block text-sm font-medium mb-2">Price Range</label>
                   <div className="px-2">
                     <Slider
-                      defaultValue={[0, 5.50]} // Updated to reflect new price range
+                      defaultValue={[0, 5.50]}
                       max={Math.max(...products.map((product) => product.price))}
                       step={0.01}
                       value={priceRange}
@@ -225,7 +295,7 @@ const RetailPage = () => {
               </div>
             </div>
 
-            <div className="lg:w-3/4">
+            <div ref={productsRef} className="lg:w-3/4">
               <div className="hidden lg:flex justify-between items-center mb-6">
                 <p className="text-sm text-muted-foreground">
                   Showing {filteredProducts.length} products

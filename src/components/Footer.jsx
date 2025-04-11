@@ -71,6 +71,8 @@ function Footer() {
               <li><Link to="/distributor" className="text-sm opacity-90 hover:opacity-100 hover:text-eco-accent transition-colors">Bulk Orders</Link></li>
               <li><Link to="/blog" className="text-sm opacity-90 hover:opacity-100 hover:text-eco-accent transition-colors">Blog</Link></li>
               <li><Link to="/contact" className="text-sm opacity-90 hover:opacity-100 hover:text-eco-accent transition-colors">Contact</Link></li>
+              <li><Link to="/payment-returns" className="text-sm opacity-90 hover:opacity-100 hover:text-eco-accent transition-colors">Payment & Returns</Link></li> {/* Add this line */}
+              <li><Link to="/privacy-policy" className="text-sm opacity-90 hover:opacity-100 hover:text-eco-accent transition-colors">Privacy Policy</Link></li> {/* Add this line */}
             </ul>
           </div>
 

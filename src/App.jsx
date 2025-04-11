@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react"; // Add useState
 import { useLocation } from "react-router-dom";
 import { api } from "@/utils/api";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,7 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
-import { HelmetProvider } from 'react-helmet-async'; // Add this import
+import { HelmetProvider } from 'react-helmet-async';
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
 import RetailPage from "./pages/RetailPage";
@@ -35,13 +35,17 @@ import QuotesPage from './pages/admin/QuotesPage';
 import OrdersPage from './pages/admin/OrdersPage';
 import BlogAdminPage from './pages/admin/BlogPage';
 import BlogFormPage from './pages/admin/BlogFormPage';
+import PaymentReturnsPage from "./pages/PaymentReturnsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
 
   useEffect(() => {
+    // Log page visit
     const logVisit = async () => {
       try {
         await api.post('/analytics/visit', { pageUrl: location.pathname });
@@ -51,10 +55,32 @@ const App = () => {
       }
     };
     logVisit();
+
+    // Show loader for at least 2 seconds on route change
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer); // Cleanup timer
   }, [location.pathname]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center">
+          <svg className="animate-spin h-12 w-12 text-eco mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-lg text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <HelmetProvider> {/* Add HelmetProvider here */}
+    <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -73,6 +99,8 @@ const App = () => {
               <Route path="contact" element={<ContactPage />} />
               <Route path="about" element={<AboutPage />} />
               <Route path="advertisement" element={<AdvertisementPage />} />
+              <Route path="payment-returns" element={<PaymentReturnsPage />} />
+              <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
               <Route

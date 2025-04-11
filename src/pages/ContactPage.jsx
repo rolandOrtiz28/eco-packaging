@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Mail, Phone, MapPin, Clock, SendHorizonal, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { submitContact } from "@/utils/api";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const ContactPage = () => {
   const [name, setName] = useState("");
@@ -13,6 +17,13 @@ const ContactPage = () => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const headerRef = useRef(null);
+  const contactInfoRef = useRef(null);
+  const formRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const faqHeaderRef = useRef(null);
+  const faqItemsRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,7 +54,6 @@ const ContactPage = () => {
 
       console.log('DEBUG: Received response from /api/contact:', response);
 
-      // Check if the response indicates a partial success (email failed but contact saved)
       if (response.message && response.message.includes('failed to send email')) {
         console.log('DEBUG: Partial success - contact saved but email failed:', response.error);
         toast.warning(response.message);
@@ -70,11 +80,133 @@ const ContactPage = () => {
     }
   };
 
+  useEffect(() => {
+    // Header Section Animations
+    gsap.fromTo(
+      headerRef.current.children,
+      { opacity: 0, y: 20 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: headerRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    // Contact Info Section Animations
+    gsap.fromTo(
+      contactInfoRef.current.children,
+      { opacity: 0, y: 20 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: contactInfoRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    // Form Section Animations
+    gsap.fromTo(
+      formRef.current.children,
+      { opacity: 0, x: -30 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: 0.8,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: formRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    // Sidebar (Business Hours & Map) Animations
+    gsap.fromTo(
+      sidebarRef.current.children,
+      { opacity: 0, x: 30 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: 0.8,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: sidebarRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    // FAQ Header Animations
+    gsap.fromTo(
+      faqHeaderRef.current.children,
+      { opacity: 0, y: 20 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: faqHeaderRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    // FAQ Items Animations
+    gsap.fromTo(
+      faqItemsRef.current.children,
+      { opacity: 0, y: 20 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: faqItemsRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+      }
+    );
+
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      gsap.killTweensOf([
+        headerRef.current,
+        contactInfoRef.current,
+        formRef.current,
+        sidebarRef.current,
+        faqHeaderRef.current,
+        faqItemsRef.current,
+      ]);
+    };
+  }, []);
+
   return (
     <div className="bg-background">
       <section className="bg-eco py-16">
         <div className="container-custom">
-          <div className="text-center text-white">
+          <div ref={headerRef} className="text-center text-white">
             <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">
               Have questions or need assistance? We're here to help. Reach out to our team using the information below.
@@ -85,7 +217,7 @@ const ContactPage = () => {
 
       <section className="py-12">
         <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div ref={contactInfoRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <div className="bg-white rounded-lg shadow-sm p-6 text-center">
               <div className="w-12 h-12 bg-eco rounded-full flex items-center justify-center mx-auto mb-4">
                 <Phone className="h-5 w-5 text-white" />
@@ -122,7 +254,7 @@ const ContactPage = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div ref={formRef} className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="border-b px-6 py-4">
                 <h2 className="font-semibold">Send Us a Message</h2>
               </div>
@@ -226,7 +358,7 @@ const ContactPage = () => {
               </form>
             </div>
 
-            <div className="space-y-6">
+            <div ref={sidebarRef} className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center mb-4">
                   <Clock className="h-5 w-5 text-eco mr-2" />
@@ -273,14 +405,14 @@ const ContactPage = () => {
 
       <section className="py-12 bg-eco-paper">
         <div className="container-custom">
-          <div className="text-center mb-12">
+          <div ref={faqHeaderRef} className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3">Frequently Asked Questions</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Find quick answers to common questions about our products and services
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div ref={faqItemsRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-3">What are your minimum order quantities?</h3>
               <p className="text-muted-foreground">

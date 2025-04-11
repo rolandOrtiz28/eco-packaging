@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle, Building2, Users, PackageCheck, Leaf, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/ProductCard";
 import QuoteFormModal from "@/components/QuoteFormModal";
 import { getDistributorProducts } from "@/utils/api";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const DistributorPage = () => {
   const [products, setProducts] = useState([]);
@@ -12,7 +16,26 @@ const DistributorPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
-  
+
+  const headerRef = useRef(null);
+  const businessRef = useRef(null);
+  const processRef = useRef(null);
+  const catalogHeaderRef = useRef(null);
+  const catalogSearchRef = useRef(null);
+  const productsRef = useRef(null);
+  const sustainabilityRef = useRef(null);
+
+  // Track animation states
+  const hasAnimated = useRef({
+    header: false,
+    business: false,
+    process: false,
+    catalogHeader: false,
+    catalogSearch: false,
+    products: false,
+    sustainability: false,
+  });
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -25,34 +48,125 @@ const DistributorPage = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchProducts();
   }, []);
-  
+
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredProducts(products);
     } else {
       const query = searchQuery.toLowerCase();
       const filtered = products.filter(
-        product => 
-          product.name.toLowerCase().includes(query) || 
+        (product) =>
+          product.name.toLowerCase().includes(query) ||
           product.description.toLowerCase().includes(query) ||
           product.category.toLowerCase().includes(query)
       );
       setFilteredProducts(filtered);
     }
   }, [searchQuery, products]);
-  
+
+  useEffect(() => {
+    const animateSection = (ref, options, key) => {
+      if (!hasAnimated.current[key]) {
+        gsap.fromTo(
+          ref.current.children,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            stagger: options.stagger || 0.2,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: ref.current,
+              start: "top 80%",
+              toggleActions: "play none none none",
+              onEnter: () => (hasAnimated.current[key] = true), // Mark as animated on first enter
+            },
+          }
+        );
+      }
+    };
+
+    // Header Animation
+    animateSection(headerRef, { stagger: 0.2 }, "header");
+
+    // Business Types Animation
+    animateSection(businessRef, { stagger: 0.15 }, "business");
+
+    // Process Animation
+    animateSection(processRef, { stagger: 0.15 }, "process");
+
+    // Catalog Header Animation
+    animateSection(catalogHeaderRef, { stagger: 0.2 }, "catalogHeader");
+
+    // Catalog Search Animation
+    gsap.fromTo(
+      catalogSearchRef.current,
+      { opacity: 0, y: 30 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: catalogSearchRef.current,
+          start: "top 80%",
+          toggleActions: "play none none none",
+          onEnter: () => (hasAnimated.current.catalogSearch = true),
+        },
+      }
+    );
+
+    // Products Animation
+    if (!isLoading && !hasAnimated.current.products) {
+      gsap.fromTo(
+        productsRef.current.children,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          stagger: 0.15,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: productsRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none",
+            onEnter: () => (hasAnimated.current.products = true),
+          },
+        }
+      );
+    }
+
+    // Sustainability Animation
+    animateSection(sustainabilityRef, { stagger: 0.2 }, "sustainability");
+
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      gsap.killTweensOf([
+        headerRef.current,
+        businessRef.current,
+        processRef.current,
+        catalogHeaderRef.current,
+        catalogSearchRef.current,
+        productsRef.current,
+        sustainabilityRef.current,
+      ]);
+    };
+  }, [isLoading]);
+
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
   };
-  
+
   const handleRequestQuote = (product) => {
     setSelectedProduct(product);
     setShowQuoteModal(true);
   };
-  
+
   const closeQuoteModal = () => {
     setShowQuoteModal(false);
     setSelectedProduct(null);
@@ -62,7 +176,7 @@ const DistributorPage = () => {
     <div>
       <section className="bg-eco py-16">
         <div className="container-custom text-white">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div ref={headerRef} className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             <div>
               <h1 className="text-4xl font-bold mb-4">Bulk Packaging Solutions</h1>
               <p className="text-lg opacity-90 mb-6">
@@ -98,7 +212,7 @@ const DistributorPage = () => {
           </div>
         </div>
       </section>
-      
+
       <section className="py-12 bg-white">
         <div className="container-custom">
           <div className="text-center mb-12">
@@ -108,7 +222,7 @@ const DistributorPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div ref={businessRef} className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-eco-paper p-6 rounded-lg text-center hover:shadow-md transition-shadow">
               <div className="bg-eco w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
                 <Building2 className="h-8 w-8 text-white" />
@@ -159,7 +273,7 @@ const DistributorPage = () => {
           </div>
         </div>
       </section>
-      
+
       <section className="py-12 bg-eco-paper">
         <div className="container-custom">
           <div className="text-center mb-12">
@@ -172,7 +286,7 @@ const DistributorPage = () => {
           <div className="relative">
             <div className="hidden md:block absolute top-1/4 left-0 w-full h-0.5 bg-eco-light"></div>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div ref={processRef} className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="relative text-center z-10">
                 <div className="bg-eco w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4 border-4 border-white">
                   <span className="text-white font-bold text-xl">1</span>
@@ -216,28 +330,28 @@ const DistributorPage = () => {
           </div>
         </div>
       </section>
-      
+
       <section id="product-catalog" className="py-12">
         <div className="container-custom">
-          <div className="text-center mb-12">
+          <div ref={catalogHeaderRef} className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3">Bulk Product Catalog</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Browse our wholesale products and request a quote for your business
             </p>
-            
-            <div className="max-w-md mx-auto mt-6">
-              <Input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="bg-white"
-              />
-            </div>
           </div>
-          
+
+          <div ref={catalogSearchRef} className="max-w-md mx-auto mt-6">
+            <Input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="bg-white"
+            />
+          </div>
+
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div ref={productsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, index) => (
                 <div key={index} className="bg-white rounded-lg shadow-sm h-80 animate-pulse">
                   <div className="h-48 bg-gray-200 rounded-t-lg"></div>
@@ -250,8 +364,8 @@ const DistributorPage = () => {
               ))}
             </div>
           ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map(product => (
+            <div ref={productsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((product) => (
                 <ProductCard 
                   key={product.id} 
                   product={product}
@@ -261,7 +375,7 @@ const DistributorPage = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
+            <div ref={productsRef} className="text-center py-12">
               <h3 className="text-xl font-medium mb-2">No products found</h3>
               <p className="text-muted-foreground mb-6">
                 Try adjusting your search terms or browse our categories.
@@ -270,10 +384,10 @@ const DistributorPage = () => {
           )}
         </div>
       </section>
-      
+
       <section className="py-12 bg-eco text-white">
         <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div ref={sustainabilityRef} className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <Leaf className="h-8 w-8" />
@@ -313,7 +427,7 @@ const DistributorPage = () => {
           </div>
         </div>
       </section>
-      
+
       <QuoteFormModal 
         product={selectedProduct}
         isOpen={showQuoteModal}
