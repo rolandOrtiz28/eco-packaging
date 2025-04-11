@@ -102,17 +102,7 @@ const LoginPage = () => {
               Sign up
             </Link>
           </div>
-          <div className="text-sm text-center text-muted-foreground mt-2">
-            <div className="text-xs text-muted-foreground">
-              Demo credentials:
-            </div>
-            <div className="text-xs">
-              Admin: admin@example.com / your-secure-password
-            </div>
-            <div className="text-xs">
-              User: user@example.com / user123
-            </div>
-          </div>
+        
         </CardFooter>
       </Card>
     </div>
