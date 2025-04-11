@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { submitQuote } from "@/utils/api";
+import { submitQuote, updateUserProfile } from "@/utils/api";
+import { useAuth } from "@/hooks/useAuth";
 
 function QuoteFormModal({ product, isOpen, onClose }) {
+  const { user, refreshUser } = useAuth();
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
@@ -14,6 +18,19 @@ function QuoteFormModal({ product, isOpen, onClose }) {
   const [quantity, setQuantity] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveInfo, setSaveInfo] = useState(false);
+  const [canSaveInfo, setCanSaveInfo] = useState(false);
+
+  // Pre-fill form fields with user data
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setPhone(user.phone || "");
+      // Check if user has saved details (e.g., phone is empty)
+      setCanSaveInfo(!user.phone || !user.address);
+    }
+  }, [user]);
 
   if (!isOpen || !product) return null;
 
@@ -36,8 +53,9 @@ function QuoteFormModal({ product, isOpen, onClose }) {
     try {
       setIsSubmitting(true);
 
+      // Submit the quote request
       await submitQuote({
-        productId: product.id, // Add productId for the backend
+        productId: product.id,
         productName: product.name,
         name,
         company,
@@ -47,6 +65,24 @@ function QuoteFormModal({ product, isOpen, onClose }) {
         message,
       });
 
+      // If saveInfo is checked and user can save, update the profile
+      if (saveInfo && canSaveInfo && user && user.id) {
+        const updatedData = {
+          name,
+          email,
+          phone,
+          // Include other fields even if not in the form, to avoid overwriting with empty values
+          address: user.address || "",
+          city: user.city || "",
+          state: user.state || "",
+          zipCode: user.zipCode || "",
+          country: user.country || "US",
+        };
+        await updateUserProfile(user.id, updatedData);
+        await refreshUser();
+        toast.success("Profile updated successfully!");
+      }
+
       toast.success("Quote request submitted successfully!");
       setName("");
       setCompany("");
@@ -54,6 +90,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
       setPhone("");
       setQuantity("");
       setMessage("");
+      setSaveInfo(false);
       onClose();
     } catch (error) {
       console.error("Error submitting quote:", error);
@@ -174,6 +211,19 @@ function QuoteFormModal({ product, isOpen, onClose }) {
                 rows={4}
               />
             </div>
+
+            {canSaveInfo && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="saveInfo"
+                  checked={saveInfo}
+                  onCheckedChange={(checked) => setSaveInfo(checked === true)}
+                />
+                <Label htmlFor="saveInfo" className="text-sm cursor-pointer">
+                  Save this information to my profile
+                </Label>
+              </div>
+            )}
 
             <div className="pt-2">
               <Button

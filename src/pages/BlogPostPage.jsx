@@ -1,27 +1,29 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Calendar, User, Tag, Clock, ArrowLeft, Share2, Facebook, Twitter, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getBlogPost, getRelatedPosts } from "@/utils/api";
+import sanitizeHtml from "sanitize-html";
 
 const BlogPostPage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const [post, setPost] = useState(null);
   const [relatedPosts, setRelatedPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const fetchPost = async () => {
-      if (!id) return;
+      if (!slug) return;
       
       setIsLoading(true);
       try {
-        const blogPostData = await getBlogPost(parseInt(id));
+        const blogPostData = await getBlogPost(slug);
         setPost(blogPostData);
         
-        const related = await getRelatedPosts(parseInt(id));
+        const related = await getRelatedPosts(slug);
         setRelatedPosts(related);
       } catch (error) {
         console.error("Error fetching blog post:", error);
@@ -33,7 +35,7 @@ const BlogPostPage = () => {
     
     fetchPost();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [slug]);
   
   const sharePost = (platform) => {
     const url = window.location.href;
@@ -92,8 +94,29 @@ const BlogPostPage = () => {
     );
   }
 
+  // Ensure tags is an array
+  const tags = Array.isArray(post.tags) ? post.tags : [];
+
   return (
     <div className="bg-background">
+      <Helmet>
+        <title>{post.titleTag}</title>
+        <meta name="description" content={post.metaDescription} />
+        <meta name="keywords" content={post.keywords.join(", ")} />
+        <meta property="og:title" content={post.titleTag} />
+        <meta property="og:description" content={post.metaDescription} />
+        <meta property="og:image" content={post.images[0]?.url} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={window.location.href} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.titleTag} />
+        <meta name="twitter:description" content={post.metaDescription} />
+        <meta name="twitter:image" content={post.images[0]?.url} />
+        <script type="application/ld+json">
+          {JSON.stringify(post.structuredData)}
+        </script>
+      </Helmet>
+
       <section className="bg-eco py-12">
         <div className="container-custom text-white">
           <div className="max-w-3xl mx-auto text-center">
@@ -130,111 +153,34 @@ const BlogPostPage = () => {
       <section className="py-12">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto">
-            <div className="mb-8 rounded-lg overflow-hidden shadow-md">
-              <img 
-                src={post.image} 
-                alt={post.title} 
-                className="w-full h-auto"
-              />
-            </div>
+            {post.images.map((img, index) => (
+              <div key={index} className="mb-8 rounded-lg overflow-hidden shadow-md">
+                <img 
+                  src={img.url} 
+                  alt={img.altText} 
+                  className="w-full h-auto"
+                  loading={index > 0 ? "lazy" : "eager"}
+                />
+              </div>
+            ))}
             
             <div className="bg-white rounded-lg shadow-sm p-6 md:p-10 mb-8">
               <article className="prose prose-lg max-w-none">
                 <p className="text-lg font-medium mb-6">{post.excerpt}</p>
-                
-                <p>
-                  In today's increasingly environmentally conscious world, businesses are
-                  under growing pressure to adopt sustainable practices. One of the most
-                  visible aspects of a company's commitment to sustainability is its
-                  choice of packaging materials.
-                </p>
-                
-                <h2>The Impact of Traditional Packaging</h2>
-                <p>
-                  Traditional packaging materials, particularly single-use plastics, have
-                  a significant environmental footprint. According to recent studies, plastic
-                  packaging accounts for nearly 40% of all plastic production worldwide, with
-                  the majority ending up in landfills or the natural environment.
-                </p>
-                
-                <p>
-                  The consequences of this waste are far-reaching:
-                </p>
-                
-                <ul>
-                  <li>Marine pollution affecting wildlife and ecosystems</li>
-                  <li>Microplastics entering the food chain</li>
-                  <li>Greenhouse gas emissions from production and disposal</li>
-                  <li>Limited recycling capabilities for many plastic types</li>
-                </ul>
-                
-                <h2>Benefits of Eco-Friendly Alternatives</h2>
-                <p>
-                  Non-woven bags and other sustainable packaging options offer numerous
-                  advantages over conventional materials:
-                </p>
-                
-                <h3>Environmental Benefits</h3>
-                <p>
-                  Eco-friendly packaging solutions like those offered by Eco Packaging Products Inc.
-                  are designed to minimize environmental impact through biodegradability,
-                  reduced resource consumption, and lower carbon emissions during production.
-                </p>
-                
-                <h3>Business Advantages</h3>
-                <p>
-                  Beyond the environmental benefits, sustainable packaging can provide
-                  significant business advantages:
-                </p>
-                
-                <ul>
-                  <li>Enhanced brand image and consumer perception</li>
-                  <li>Meeting evolving consumer expectations</li>
-                  <li>Potential cost savings through material efficiency</li>
-                  <li>Compliance with emerging regulations</li>
-                  <li>Competitive differentiation in the marketplace</li>
-                </ul>
-                
-                <blockquote>
-                  "The most successful businesses of tomorrow will be those that integrate
-                  sustainability into their core operations today. Packaging represents one
-                  of the most visible and impactful opportunities to demonstrate this commitment."
-                </blockquote>
-                
-                <h2>Implementing Sustainable Packaging</h2>
-                <p>
-                  Transitioning to eco-friendly packaging requires careful planning and
-                  consideration of various factors:
-                </p>
-                
-                <ol>
-                  <li>Assessing current packaging usage and environmental impact</li>
-                  <li>Identifying suitable sustainable alternatives</li>
-                  <li>Evaluating costs and logistical considerations</li>
-                  <li>Communicating changes to consumers and stakeholders</li>
-                  <li>Monitoring and measuring environmental benefits</li>
-                </ol>
-                
-                <h2>Conclusion</h2>
-                <p>
-                  The shift toward sustainable packaging is not merely a trend but a
-                  fundamental transformation in how businesses operate. By embracing
-                  eco-friendly packaging solutions, companies can reduce their environmental
-                  footprint while positioning themselves favorably in an increasingly
-                  conscientious marketplace.
-                </p>
-                
-                <p>
-                  At Eco Packaging Products Inc., we're committed to helping businesses
-                  navigate this transition with innovative, high-quality packaging solutions
-                  that meet both environmental and business objectives.
-                </p>
+                <div 
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeHtml(post.content, {
+                      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+                      allowedAttributes: { ...sanitizeHtml.defaults.allowedAttributes, img: ['src', 'alt'] }
+                    })
+                  }}
+                />
               </article>
               
               <div className="mt-8 pt-6 border-t">
                 <div className="flex items-center flex-wrap gap-2">
                   <Tag size={18} className="text-muted-foreground mr-2" />
-                  {post.tags.map(tag => (
+                  {tags.map(tag => (
                     <Badge key={tag} variant="outline">
                       {tag}
                     </Badge>
@@ -292,12 +238,12 @@ const BlogPostPage = () => {
             <h2 className="text-2xl font-bold mb-8 text-center">Related Articles</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedPosts.map(post => (
-                <Link key={post.id} to={`/blog/${post.id}`} className="group">
+                <Link key={post.id} to={`/blog/${post.slug}`} className="group">
                   <div className="bg-white rounded-lg overflow-hidden shadow-sm card-hover h-full">
                     <div className="h-40 overflow-hidden">
                       <img 
-                        src={post.image} 
-                        alt={post.title} 
+                        src={post.images[0]?.url} 
+                        alt={post.images[0]?.altText} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>

@@ -15,25 +15,35 @@ function ChatWidget() {
   });
   const [messages, setMessages] = useState(() => {
     const savedMessages = localStorage.getItem("chatMessages");
-    return savedMessages ? JSON.parse(savedMessages) : [];
+    const savedTimestamp = localStorage.getItem("chatTimestamp");
+  
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+  
+    if (!savedMessages || (savedTimestamp && now - parseInt(savedTimestamp, 10) > twentyFourHours)) {
+      // Guest chat expired or no messages
+      localStorage.removeItem("chatMessages");
+      localStorage.removeItem("chatTimestamp");
+      return [];
+    }
+  
+    return JSON.parse(savedMessages);
   });
   const [inputValue, setInputValue] = useState("");
   const [name, setName] = useState(() => localStorage.getItem("chatName") || "");
   const [email, setEmail] = useState(() => localStorage.getItem("chatEmail") || "");
   const [awaitingHuman, setAwaitingHuman] = useState(false);
-  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
-  const [followUpEmail, setFollowUpEmail] = useState("");
   const [userId, setUserId] = useState(null);
   const [isHumanConnected, setIsHumanConnected] = useState(false);
   const [showInfoForm, setShowInfoForm] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isFirstMessage, setIsFirstMessage] = useState(true);
-  const [isSubmittingFollowUp, setIsSubmittingFollowUp] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const adminTimeoutRef = useRef(null);
   const messageIdCounter = useRef(0);
-  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const [isSubmittingInfo, setIsSubmittingInfo] = useState(false);
 
   const API_BASE_URL =
     window.location.hostname === "localhost"
@@ -58,23 +68,7 @@ function ChatWidget() {
   
   const timeoutMessage = {
     id: messageIdCounter.current++,
-    text: "Sorry, it looks like our team is currently unavailable. Please provide your email, and we’ll follow up with you soon!",
-    sender: "bot",
-    name: "EcoBuddy",
-    timestamp: new Date().toISOString(),
-  };
-  
-  const thankYouMessage = {
-    id: messageIdCounter.current++,
-    text: "Thank you! We’ll follow up with you soon via email.",
-    sender: "bot",
-    name: "EcoBuddy",
-    timestamp: new Date().toISOString(),
-  };
-  
-  const inactivityMessage = {
-    id: messageIdCounter.current++,
-    text: "You’ve been disconnected due to inactivity. Type 'talk to human' to reconnect.",
+    text: "Sorry, our team is currently unavailable. We’ll follow up with you via email soon!",
     sender: "bot",
     name: "EcoBuddy",
     timestamp: new Date().toISOString(),
@@ -82,7 +76,10 @@ function ChatWidget() {
 
   useEffect(() => {
     localStorage.setItem("chatMessages", JSON.stringify(messages));
-  }, [messages]);
+    if (!isAuthenticated) {
+      localStorage.setItem("chatTimestamp", Date.now().toString());
+    }
+  }, [messages, isAuthenticated]);
 
   useEffect(() => {
     if (name) localStorage.setItem("chatName", name);
@@ -96,29 +93,21 @@ function ChatWidget() {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
-  
+
     socketRef.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
-      if (userId) {
-        console.log(`Joining room for userId: ${userId}`);
-        socketRef.current.emit('join-room', userId);
-      }
     });
-  
+
     socketRef.current.on('reconnect', () => {
       console.log('Reconnected to Socket.IO server');
-      if (userId) {
-        console.log(`Rejoining room for userId: ${userId}`);
-        socketRef.current.emit('join-room', userId);
-      }
     });
-  
+
     socketRef.current.on('reconnect_error', () => {
       console.log('Reconnection failed');
       toast.error("Connection lost. Please try again later.");
       closeChat();
     });
-  
+
     socketRef.current.on('awaiting-human', (data) => {
       console.log('Received awaiting-human event:', data);
       setAwaitingHuman(true);
@@ -133,11 +122,10 @@ function ChatWidget() {
         },
       ]);
     });
-  
+
     socketRef.current.on('no-admins', (data) => {
       console.log('Received no-admins event:', data);
       setAwaitingHuman(false);
-      setShowFollowUpForm(true);
       setIsFirstMessage(true);
       setMessages((prev) => [
         ...prev,
@@ -145,11 +133,12 @@ function ChatWidget() {
           id: messageIdCounter.current++,
           text: data.message,
           sender: "bot",
+          name: "EcoBuddy",
           timestamp: new Date().toISOString(),
         },
       ]);
     });
-  
+
     socketRef.current.on('human-connected', (data) => {
       console.log('Received human-connected event:', data);
       setAwaitingHuman(false);
@@ -160,11 +149,12 @@ function ChatWidget() {
           id: messageIdCounter.current++,
           text: data.message,
           sender: "bot",
+          name: "EcoBuddy",
           timestamp: new Date().toISOString(),
         },
       ]);
     });
-  
+
     socketRef.current.on('inactivity-disconnect', (data) => {
       console.log('Received inactivity-disconnect event:', data);
       setIsHumanConnected(false);
@@ -185,7 +175,7 @@ function ChatWidget() {
         ];
       });
     });
-  
+
     socketRef.current.on('message', (data) => {
       console.log('Received message from server:', data);
       setMessages((prev) => {
@@ -213,14 +203,7 @@ function ChatWidget() {
         ];
       });
     });
-  
-    socketRef.current.leaveRoom = (roomId) => {
-      if (roomId) {
-        console.log(`Leaving room for userId: ${roomId}`);
-        socketRef.current.emit('leave-room', roomId);
-      }
-    };
-  
+
     return () => {
       socketRef.current.off('connect');
       socketRef.current.off('reconnect');
@@ -232,7 +215,18 @@ function ChatWidget() {
       socketRef.current.off('message');
       socketRef.current.disconnect();
     };
-  }, [userId, name]);
+  }, []);
+
+  useEffect(() => {
+    if (userId && socketRef.current) {
+      console.log(`Joining room for userId: ${userId}`);
+      socketRef.current.emit('join-room', userId);
+      return () => {
+        console.log(`Leaving room for userId: ${userId}`);
+        socketRef.current.emit('leave-room', userId);
+      };
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (authLoading) {
@@ -243,6 +237,21 @@ function ChatWidget() {
     if (isAuthenticated && user) {
       setName(user.name);
       setEmail(user.email);
+      localStorage.setItem("chatName", user.name);
+      localStorage.setItem("chatEmail", user.email);
+    } else {
+      setName("");
+      setEmail("");
+      setMessages([]);
+      setUserId(null);
+      setAwaitingHuman(false);
+      setIsHumanConnected(false);
+      setIsFirstMessage(true);
+      localStorage.removeItem("chatName");
+      localStorage.removeItem("chatEmail");
+      localStorage.removeItem("chatMessages");
+      localStorage.removeItem("chatState");
+      setChatState("closed");
     }
 
     setIsLoadingUser(false);
@@ -251,20 +260,24 @@ function ChatWidget() {
   useEffect(() => {
     if (chatState === "open") {
       if (!isAuthenticated) {
-        if (!name || !email) {
-          setMessages((prev) => prev.length === 0 ? [initialMessage, infoRequestMessage] : prev);
-          setShowInfoForm(true);
-        } else {
-          setMessages((prev) => prev.length === 0 ? [initialMessage] : prev);
-          setShowInfoForm(false);
-        }
+        const storedName = localStorage.getItem("chatName");
+        const storedEmail = localStorage.getItem("chatEmail");
+  
+        setName(storedName || "");
+        setEmail(storedEmail || "");
+  
+        const shouldShowForm = !storedName || !storedEmail;
+  
+        setMessages((prev) => prev.length === 0 ? [initialMessage, ...(shouldShowForm ? [infoRequestMessage] : [])] : prev);
+        setShowInfoForm(shouldShowForm);
       } else {
         setMessages((prev) => prev.length === 0 ? [initialMessage] : prev);
         setShowInfoForm(false);
       }
+  
       setIsFirstMessage(true);
     }
-  }, [chatState, isAuthenticated, isLoadingUser, name, email]);
+  }, [chatState, isAuthenticated, isLoadingUser]);
 
   useEffect(() => {
     if (isAuthenticated && user && email && email !== user.email) {
@@ -276,8 +289,10 @@ function ChatWidget() {
           }, { withCredentials: true });
           setEmail(user.email);
           setName(user.name);
+          localStorage.setItem("chatName", user.name);
+          localStorage.setItem("chatEmail", user.email);
           setUserId(null);
-          socketRef.current.leaveRoom(userId);
+          socketRef.current.emit('leave-room', userId);
           setMessages([initialMessage]);
           setIsFirstMessage(true);
           toast.success("Chat session updated with your account information.");
@@ -285,8 +300,10 @@ function ChatWidget() {
           console.error("Error updating chat session email:", error);
           setEmail(user.email);
           setName(user.name);
+          localStorage.setItem("chatName", user.name);
+          localStorage.setItem("chatEmail", user.email);
           setUserId(null);
-          socketRef.current.leaveRoom(userId);
+          socketRef.current.emit('leave-room', userId);
           setMessages([initialMessage]);
           setIsFirstMessage(true);
           toast.error("Failed to update chat session with your account information. Starting a new session.");
@@ -299,13 +316,12 @@ function ChatWidget() {
   useEffect(() => {
     console.log(`awaitingHuman: ${awaitingHuman}, isHumanConnected: ${isHumanConnected}`);
     if (awaitingHuman && !isHumanConnected) {
-      console.log('Starting 2-minute timeout for admin connection');
+      console.log('Starting 1-minute timeout for admin connection');
       adminTimeoutRef.current = setTimeout(() => {
-        console.log('2-minute timeout triggered: No admin connected');
+        console.log('1-minute timeout triggered: No admin connected');
         setAwaitingHuman(false);
-        setShowFollowUpForm(true);
         setMessages((prev) => [...prev, timeoutMessage]);
-      }, 120000);
+      }, 60000);
     }
 
     return () => {
@@ -322,15 +338,6 @@ function ChatWidget() {
     }
   }, [messages]);
 
-  useEffect(() => {
-    if (!isAuthenticated && !authLoading) {
-      setMessages([]);
-      localStorage.removeItem("chatMessages");
-      setIsFirstMessage(true);
-      closeChat();
-    }
-  }, [isAuthenticated, authLoading]);
-
   const toggleChat = () => {
     setChatState(chatState === "closed" ? "open" : "closed");
   };
@@ -338,13 +345,13 @@ function ChatWidget() {
   const closeChat = () => {
     setChatState("closed");
     setInputValue("");
-    setAwaitingHuman(false);
-    setShowFollowUpForm(false);
-    setIsHumanConnected(false);
     setUserId(null);
-    socketRef.current.leaveRoom(userId);
+    setAwaitingHuman(false);
+    setIsHumanConnected(false);
     setShowInfoForm(false);
     setIsFirstMessage(true);
+    socketRef.current.emit('leave-room', userId);
+  
     if (adminTimeoutRef.current) {
       clearTimeout(adminTimeoutRef.current);
     }
@@ -358,11 +365,12 @@ function ChatWidget() {
       return;
     }
 
-    if (!email.includes('@') || !email.includes('.')) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       toast.error("Please provide a valid email address");
       return;
     }
-
+    setIsSubmittingInfo(true);
     try {
       await submitChat({
         name,
@@ -373,9 +381,13 @@ function ChatWidget() {
       setShowInfoForm(false);
       setMessages([initialMessage]);
       setIsFirstMessage(true);
+      localStorage.setItem("chatName", name);
+      localStorage.setItem("chatEmail", email);
     } catch (error) {
       console.error("Error saving user info:", error);
       toast.error("Failed to save your information. Please try again.");
+    }finally {
+      setIsSubmittingInfo(false); 
     }
   };
 
@@ -384,6 +396,14 @@ function ChatWidget() {
   
     if (!isAuthenticated && (!name || !email)) {
       toast.error("Please provide your name and email before sending a message.");
+      setShowInfoForm(true);
+      return;
+    }
+  
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!isAuthenticated && !emailRegex.test(email)) {
+      toast.error("Invalid email address. Please provide a valid email.");
+      setShowInfoForm(true);
       return;
     }
   
@@ -403,24 +423,22 @@ function ChatWidget() {
     });
   
     setInputValue("");
-    setMessages((prev) => [...prev, userMessage]);
+  
+    // Only show the message immediately if there's no human admin connected
+    if (!isHumanConnected) {
+      setMessages((prev) => [...prev, userMessage]);
+    }
   
     try {
-      console.log("Client: Submitting chat to server", { name, email, message: inputValue });
-      const response = await submitChat({
-        name,
-        email,
-        message: inputValue,
-      });
+      if (inputValue.toLowerCase().includes('talk to human') || awaitingHuman) {
+        const response = await submitChat({
+          name,
+          email,
+          message: inputValue,
+        });
   
-      if (!response) {
-        throw new Error('No response from server');
-      }
+        if (!response) throw new Error('No response from server');
   
-      console.log("Client: Received response from server", response);
-  
-      if (inputValue.toLowerCase().includes('talk to human') || response.awaitingHuman) {
-        console.log("Client: Requesting human", { userId: response.userId });
         setUserId(response.userId);
         socketRef.current.emit('join-room', response.userId);
         socketRef.current.emit('request-human', {
@@ -431,13 +449,7 @@ function ChatWidget() {
         });
         setAwaitingHuman(true);
       } else if (isHumanConnected) {
-        console.log("Client: Emitting user-message to server", {
-          userId: userId,
-          message: inputValue,
-          sender: "user",
-          name: name,
-          timestamp: userMessage.timestamp,
-        });
+        // Send message to admin only
         socketRef.current.emit('user-message', {
           userId: userId,
           message: inputValue,
@@ -446,9 +458,18 @@ function ChatWidget() {
           timestamp: userMessage.timestamp,
         });
       } else {
-        console.log("Client: No human connected, handling AI response", { userId: response.userId });
+        // Get AI response
+        const response = await submitChat({
+          name,
+          email,
+          message: inputValue,
+        });
+  
+        if (!response) throw new Error('No response from server');
+  
         setUserId(response.userId);
         socketRef.current.emit('join-room', response.userId);
+  
         if (isFirstMessage) {
           setMessages((prev) => [
             ...prev,
@@ -478,45 +499,13 @@ function ChatWidget() {
       ]);
     }
   };
-
-  const handleFollowUpSubmit = async (e) => {
-    e.preventDefault();
   
-    if (!followUpEmail.trim() || !followUpEmail.includes('@') || !followUpEmail.includes('.')) {
-      toast.error("Please provide a valid email address");
-      return;
-    }
-    setIsSubmittingFollowUp(true);
-  
-    try {
-      await submitChat({
-        name,
-        email: followUpEmail,
-        message: 'Follow-up email request after admin unavailability',
-      });
-      setMessages((prev) => {
-        console.log('Adding thank you message to state:', thankYouMessage);
-        return [...prev, thankYouMessage];
-      });
-      setShowFollowUpForm(false);
-      setAwaitingHuman(false);
-      setIsHumanConnected(false);
-      setIsFirstMessage(false); 
-    } catch (error) {
-      console.error("Error submitting follow-up email:", error);
-      toast.error("Failed to submit email. Please try again.");
-    } finally{
-      setIsSubmittingFollowUp(false);
-    }
-  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (showInfoForm) {
         handleSubmitInfo(e);
-      } else if (showFollowUpForm) {
-        handleFollowUpSubmit(e);
       } else {
         handleSendMessage();
       }
@@ -622,9 +611,17 @@ function ChatWidget() {
                         className="w-full border-gray-300"
                       />
                     </div>
-                    <Button type="submit" className="w-full bg-eco hover:bg-eco-dark">
-                      Submit
-                    </Button>
+                    <Button
+  type="submit"
+  className="w-full bg-eco hover:bg-eco-dark"
+  disabled={isSubmittingInfo}
+>
+  {isSubmittingInfo ? (
+    <Loader2 className="animate-spin w-4 h-4 mx-auto" />
+  ) : (
+    "Submit"
+  )}
+</Button>
                   </form>
                 </div>
               </div>
@@ -637,35 +634,9 @@ function ChatWidget() {
                 </p>
               </div>
             )}
-            {showFollowUpForm && (
-              <div className="mb-4 flex justify-start">
-                <div className="bg-white shadow-sm border rounded-lg p-3 max-w-[80%]">
-                  <form onSubmit={handleFollowUpSubmit} className="space-y-4">
-                    <div>
-                      <Input
-                        id="followUpEmail"
-                        type="email"
-                        value={followUpEmail}
-                        onChange={(e) => setFollowUpEmail(e.target.value)}
-                        placeholder="your.email@example.com"
-                        required
-                        className="w-full border-gray-300"
-                      />
-                    </div>
-                    <Button type="submit" className="w-full bg-eco hover:bg-eco-dark" disabled={isSubmittingFollowUp}>
-  {isSubmittingFollowUp ? (
-    <Loader2 className="animate-spin mx-auto" size={18} />
-  ) : (
-    "Submit Email"
-  )}
-</Button>
-                  </form>
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </div>
-          {!showFollowUpForm && !showInfoForm && (
+          {!showInfoForm && (
             <div className="p-4 border-t">
               <div className="flex">
                 <Textarea

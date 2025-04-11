@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { BarChart, User, Users, FileText, Settings, LogOut, MessageSquare, Tag, Package, FileCheck, ShoppingCart } from "lucide-react";
+import { BarChart, User, Users, FileText, Settings, LogOut, MessageSquare, Tag, Package, FileCheck, ShoppingCart, BookOpen } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +19,15 @@ function AdminSidebar() {
     quotes: 0,
     promocodes: 0,
     chat: 0,
+    blog: 0 // New
   });
   const socketRef = useRef(null);
-
-
 
   const API_BASE_URL =
     window.location.hostname === "localhost"
       ? "http://localhost:3000"
       : "https://your-production-url.com";
 
-  // Initialize socket connection
   useEffect(() => {
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
@@ -53,7 +51,6 @@ function AdminSidebar() {
       toast.error("Connection lost. Trying to reconnect...");
     });
 
-    // Listen for notifications for various pages
     socketRef.current.on('new-lead', () => {
       if (location.pathname !== '/admin/leads') {
         setNotifications((prev) => ({ ...prev, leads: prev.leads + 1 }));
@@ -89,6 +86,13 @@ function AdminSidebar() {
       }
     });
 
+    socketRef.current.on('new-blog', () => {
+      if (location.pathname !== '/admin/blog') {
+        setNotifications((prev) => ({ ...prev, blog: prev.blog + 1 }));
+        toast.info("New blog post created");
+      }
+    });
+
     socketRef.current.on('chat-request', () => {
       if (location.pathname !== '/admin/chat') {
         setNotifications((prev) => ({ ...prev, chat: prev.chat + 1 }));
@@ -102,7 +106,6 @@ function AdminSidebar() {
     };
   }, [location.pathname, toast]);
 
-  // Clear notifications when navigating to a page
   useEffect(() => {
     const path = location.pathname;
     setNotifications((prev) => ({
@@ -113,13 +116,13 @@ function AdminSidebar() {
       quotes: path === '/admin/quotes' ? 0 : prev.quotes,
       promocodes: path === '/admin/promocodes' ? 0 : prev.promocodes,
       chat: path === '/admin/chat' ? 0 : prev.chat,
+      blog: path === '/admin/blog' ? 0 : prev.blog
     }));
   }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
     navigate("/");
-    closeMenu();
   };
 
   return (
@@ -239,6 +242,25 @@ function AdminSidebar() {
           {notifications.promocodes > 0 && (
             <Badge variant="destructive" className="ml-auto text-xs">
               {notifications.promocodes}
+            </Badge>
+          )}
+        </NavLink>
+
+        <NavLink
+          to="/admin/blog"
+          className={({ isActive }) =>
+            `flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
+              isActive
+                ? "bg-eco-light text-eco-dark font-medium"
+                : "text-eco-dark hover:bg-eco-light"
+            }`
+          }
+        >
+          <BookOpen className="mr-2 h-4 w-4" />
+          Blog
+          {notifications.blog > 0 && (
+            <Badge variant="destructive" className="ml-auto text-xs">
+              {notifications.blog}
             </Badge>
           )}
         </NavLink>

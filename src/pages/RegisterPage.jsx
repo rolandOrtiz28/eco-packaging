@@ -71,7 +71,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
         title: "Registration Successful",
         description: "Your account has been created",
       });
-      navigate("/");
+      navigate("/login");
     } catch (error) {
       toast({
         title: "Registration Failed",

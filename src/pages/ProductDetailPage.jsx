@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Check, Truck, Shield, CreditCard } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Check, Truck, Shield, CreditCard, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ProductCard from "@/components/ProductCard";
-import { getProduct, getRelatedProducts } from "@/utils/api";
+import { getProduct, getRelatedProducts, api } from "@/utils/api";
 import { useCart } from "@/hooks/useCart";
 
 const ProductDetailPage = () => {
@@ -15,6 +15,9 @@ const ProductDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [settings, setSettings] = useState({
+    freeDeliveryThreshold: 50,
+  });
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -34,7 +37,20 @@ const ProductDetailPage = () => {
       }
     };
 
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/settings');
+        setSettings({
+          freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
+        });
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+        toast.error("Failed to fetch settings");
+      }
+    };
+
     fetchProductData();
+    fetchSettings();
     setQuantity(1);
     setActiveImageIndex(0);
   }, [id]);
@@ -43,11 +59,33 @@ const ProductDetailPage = () => {
   const decrementQuantity = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   const handleAddToCart = () => {
     if (product) {
+      if (!product.inStock) {
+        toast.error("This product is out of stock and cannot be added to the cart.");
+        return;
+      }
       addToCart(product, quantity);
       toast.success(`${product.name} added to your cart`);
     }
   };
   const handleImageChange = (index) => setActiveImageIndex(index);
+
+  const extractUnitsPerCase = (caseString) => {
+    const match = caseString.match(/\((\d+)(?:pcs|pc)\)/);
+    return match ? parseInt(match[1], 10) : product?.pcsPerCase || 1;
+  };
+
+  const calculatePricePerCase = () => {
+    if (!product || !product.details || !product.details.pricing || product.details.pricing.length === 0) {
+      return "N/A";
+    }
+    const firstTier = product.details.pricing[0];
+    const units = extractUnitsPerCase(firstTier.case);
+    const pricePerUnit = parseFloat(firstTier.pricePerUnit);
+    if (isNaN(pricePerUnit)) {
+      return "Please contact office";
+    }
+    return (pricePerUnit * units).toFixed(2);
+  };
 
   if (isLoading) {
     return (
@@ -81,8 +119,8 @@ const ProductDetailPage = () => {
     );
   }
 
-  // Use the product's images array, falling back to the main image if no additional images exist
   const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
+  const pricePerCase = calculatePricePerCase();
 
   return (
     <div className="bg-background">
@@ -130,7 +168,11 @@ const ProductDetailPage = () => {
 
             <div>
               <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-              <p className="text-2xl text-eco font-bold mb-4">${product.price.toFixed(2)}</p>
+              <p className="text-2xl text-eco font-bold mb-4">
+                {pricePerCase === "N/A" || pricePerCase === "Please contact office"
+                  ? pricePerCase
+                  : `$${pricePerCase} per case (${product.pcsPerCase} units)`}
+              </p>
 
               <div className="border-t border-b py-4 my-6">
                 <p className="text-gray-700 mb-4">{product.description}</p>
@@ -177,6 +219,7 @@ const ProductDetailPage = () => {
                   <Button
                     onClick={handleAddToCart}
                     className="flex-1 bg-eco hover:bg-eco-dark"
+                    disabled={!product.inStock}
                   >
                     <ShoppingCart className="mr-2 h-5 w-5" />
                     Add to Cart
@@ -185,12 +228,16 @@ const ProductDetailPage = () => {
 
                 <div className="flex flex-col gap-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <Check size={18} className="text-eco" />
-                    <span>In stock</span>
+                    {product.inStock ? (
+                      <Check size={18} className="text-eco" />
+                    ) : (
+                      <XCircle size={18} className="text-red-500" />
+                    )}
+                    <span>{product.inStock ? "In stock" : "Out of stock"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Truck size={18} className="text-eco" />
-                    <span>Free shipping on orders over $50</span>
+                    <span>Free shipping on orders over ${settings.freeDeliveryThreshold.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

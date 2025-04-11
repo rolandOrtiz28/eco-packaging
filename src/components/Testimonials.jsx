@@ -3,21 +3,21 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    name: "Sarah Thompson",
-    role: "Owner, Green Boutique",
-    quote: "Eco Packaging Products Inc. has transformed our packaging with their sustainable solutions. Our customers love the quality and eco-friendly design!",
+    name: "99 cents City Line",
+   location: "Long Island",
+    quote: "Top-notch Bags for 99 Cents Store! These non-woven shopping bags are a game-changer for our 99 cents store. They're strong, reliable, and the customers adore them. Five stars for quality and affordability!",
     rating: 5,
   },
   {
-    name: "Michael Carter",
-    role: "Manager, FreshMart",
-    quote: "The reusable grocery bags are a game-changer. Durable, stylish, and environmentally friendly—exactly what we needed for our store.",
-    rating: 4,
+    name: "Best Liquid Store",
+   location: "Manhattan",
+    quote: "Outstanding Quality! As a wholesale buyer for our liquor store, we are extremely pleased with the non-woven shopping bags. Sturdy, durable, and the perfect size. Definitely, a 5-star product!",
+    rating: 5,
   },
   {
-    name: "Emily Davis",
-    role: "Event Planner",
-    quote: "Their custom print gift bags added a perfect touch to our events. The team was quick to deliver, and the quality exceeded our expectations.",
+    name: "711 Seven-Eleven",
+   location: "Queens, NY",
+    quote: "Impressive Quality! As a 7-Eleven owner, I can’t emphasize enough how great these non-woven bags are. They withstand heavy use, making them perfect for our convenience store. A definite 5-star product!",
     rating: 5,
   },
 ];
@@ -47,7 +47,7 @@ const Testimonials = () => {
               <p className="text-gray-700 mb-4 italic">"{testimonial.quote}"</p>
               <div>
                 <p className="font-semibold">{testimonial.name}</p>
-                <p className="text-sm text-gray-500">{testimonial.role}</p>
+                <p className="text-sm text-gray-500">{testimonial.location}</p>
               </div>
             </div>
           ))}

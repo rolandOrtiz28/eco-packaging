@@ -20,9 +20,9 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const data = await getBlogPosts();
-        setPosts(data);
-        setFilteredPosts(data);
+        const { posts } = await getBlogPosts({ published: true });
+        setPosts(posts);
+        setFilteredPosts(posts);
       } catch (error) {
         console.error("Error fetching blog posts:", error);
       } finally {
@@ -133,13 +133,13 @@ const BlogPage = () => {
                     {posts.slice(0, 3).map(post => (
                       <Link 
                         key={post.id} 
-                        to={`/blog/${post.id}`}
+                        to={`/blog/${post.slug}`}
                         className="flex items-start group"
                       >
                         <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
                           <img 
-                            src={post.image} 
-                            alt={post.title} 
+                            src={post.images[0]?.url} 
+                            alt={post.images[0]?.altText} 
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -181,12 +181,12 @@ const BlogPage = () => {
               ) : filteredPosts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {filteredPosts.map(post => (
-                    <Link key={post.id} to={`/blog/${post.id}`} className="group">
+                    <Link key={post.id} to={`/blog/${post.slug}`} className="group">
                       <div className="bg-white rounded-lg overflow-hidden shadow-sm card-hover h-full">
                         <div className="h-48 overflow-hidden">
                           <img 
-                            src={post.image} 
-                            alt={post.title} 
+                            src={post.images[0]?.url} 
+                            alt={post.images[0]?.altText} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>

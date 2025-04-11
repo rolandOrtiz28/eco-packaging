@@ -20,7 +20,7 @@ import { updateUserProfile, createPaypalOrder, capturePaypalOrder, completeOrder
 
 const CheckoutPage = () => {
   const { cartItems, clearCart, discount } = useCart();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -69,6 +69,7 @@ const CheckoutPage = () => {
   // Pre-fill user details when user is loaded
   useEffect(() => {
     if (user) {
+      console.log('User data:', user);
       const nameParts = user.name ? user.name.split(" ") : ["", ""];
       setFirstName(nameParts[0] || "");
       setLastName(nameParts.slice(1).join(" ") || "");
@@ -164,18 +165,20 @@ const CheckoutPage = () => {
         country,
       };
   
-      if (user && saveInfo) {
+      if (user && saveInfo && user.id) {
         await updateUserProfile(user.id, updatedData);
-        const updatedUser = await getUserProfile(user.id);
-        setUser(updatedUser); // <-- this re-populates on next visit
+        await refreshUser(); // Refresh user data
         toast.success("Your info has been saved for future orders.");
+      } else if (user && saveInfo && !user.id) {
+        console.error("User ID is undefined:", user);
+        toast.error("Unable to save profile: User ID is missing.");
       }
   
       setStep("payment");
       window.scrollTo(0, 0);
     } catch (err) {
       console.error("Error updating user profile during checkout:", err);
-      toast.error("Failed to save your information. Please try again.");
+      toast.error(err.message || "Failed to save your information. Please try again.");
     }
   };
   
@@ -212,7 +215,7 @@ const CheckoutPage = () => {
     try {
       const captureData = await capturePaypalOrder(token, payerId);
       console.log("Payment captured:", captureData);
-
+  
       const orderData = {
         items: cartItems.map(item => ({
           productId: item.id,
@@ -223,26 +226,15 @@ const CheckoutPage = () => {
           pcsPerCase: item.pcsPerCase,
         })),
         total,
-        discount, // Include discount in order data
+        discount,
       };
-      console.log('Completing order with data:', orderData); // Add logging
+      console.log('Completing order with data:', orderData);
+      if (!user || !user.id) {
+        throw new Error("User ID is missing");
+      }
       const orderResult = await completeOrder(user.id, token, captureData.paymentId, orderData);
       console.log("Order completed:", orderResult);
-
-      if (saveInfo) {
-        const updatedData = {
-          name: `${firstName} ${lastName}`.trim(),
-          email,
-          phone,
-          address,
-          city,
-          state,
-          zipCode,
-          country,
-        };
-        await updateUserProfile(user.id, updatedData);
-      }
-
+  
       clearCart();
       setStep("confirmation");
       window.scrollTo(0, 0);

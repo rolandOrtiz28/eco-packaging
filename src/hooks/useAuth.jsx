@@ -13,24 +13,28 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   const fetchUser = async () => {
-   
     try {
       const response = await api.get('/auth/user');
-     
       const userData = response.data;
       setUser(userData);
       setIsAuthenticated(true);
       setIsAdmin(userData.role === "admin");
-    
     } catch (error) {
-     
       setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
-      
     } finally {
       setLoading(false);
-      
+    }
+  };
+
+  // Add refreshUser function
+  const refreshUser = async () => {
+    setLoading(true);
+    try {
+      await fetchUser();
+    } catch (error) {
+      console.error('Error refreshing user:', error);
     }
   };
 
@@ -71,7 +75,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, isAuthenticated, isAdmin, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, isAuthenticated, isAdmin, login, logout, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

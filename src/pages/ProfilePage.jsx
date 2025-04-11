@@ -3,19 +3,39 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { getUserProfile } from "@/utils/api";
+import { getUserProfile, updateUserProfile } from "@/utils/api";
 import { toast } from "sonner";
 import { User, ShoppingBag, Clock, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 
 const ProfilePage = () => {
   const { addToCart } = useCart();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+  });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -24,11 +44,22 @@ const ProfilePage = () => {
         setIsLoading(false);
         return;
       }
-  
+
       setIsLoading(true);
       try {
         const profileData = await getUserProfile(user.id);
         setUserProfile(profileData);
+        // Initialize form data with profile data
+        setFormData({
+          name: profileData.name || "",
+          email: profileData.email || "",
+          phone: profileData.phone || "",
+          address: profileData.address || "",
+          city: profileData.city || "",
+          state: profileData.state || "",
+          zipCode: profileData.zipCode || "",
+          country: profileData.country || "US",
+        });
       } catch (err) {
         setError("Failed to load profile data");
         console.error("Error fetching profile:", err);
@@ -36,7 +67,7 @@ const ProfilePage = () => {
         setIsLoading(false);
       }
     };
-  
+
     fetchUserProfile();
   }, [user]);
 
@@ -51,7 +82,7 @@ const ProfilePage = () => {
   const handleReorder = (order) => {
     order.items.forEach(item => {
       const product = {
-        id: item.productId, // Use productId
+        id: item.productId,
         name: item.name,
         price: item.pricePerCase / item.moq,
         bulkPrice: item.pricePerCase / item.moq,
@@ -70,6 +101,30 @@ const ProfilePage = () => {
     navigate("/cart");
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCountryChange = (value) => {
+    setFormData(prev => ({ ...prev, country: value }));
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+      await updateUserProfile(user.id, formData);
+      await refreshUser();
+      const updatedProfile = await getUserProfile(user.id);
+      setUserProfile(updatedProfile);
+      setIsEditing(false);
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      toast.error(err.message || "Failed to update profile. Please try again.");
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="bg-eco-paper py-16">
@@ -82,7 +137,7 @@ const ProfilePage = () => {
       </div>
     );
   }
-  
+
   if (error || !userProfile) {
     return (
       <div className="bg-eco-paper py-16">
@@ -126,25 +181,161 @@ const ProfilePage = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Full Name</p>
-                    <p className="text-lg font-medium">{userProfile.name}</p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-sm text-gray-500">Email Address</p>
-                    <p className="text-lg font-medium">{userProfile.email}</p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-sm text-gray-500">Account Type</p>
-                    <p className="text-lg font-medium">{userProfile.accountType || "Standard"}</p>
-                  </div>
-                </div>
-                <Button className="w-full mt-6 bg-eco hover:bg-eco-dark">
-                  Edit Profile
-                </Button>
+                {isEditing ? (
+                  <form onSubmit={handleSaveProfile} className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="address">Address</Label>
+                      <Input
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="state">State/Province</Label>
+                      <Input
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="zipCode">Zip/Postal Code</Label>
+                      <Input
+                        id="zipCode"
+                        name="zipCode"
+                        value={formData.zipCode}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="country">Country</Label>
+                      <Select value={formData.country} onValueChange={handleCountryChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="US">United States</SelectItem>
+                          <SelectItem value="CA">Canada</SelectItem>
+                          <SelectItem value="UK">United Kingdom</SelectItem>
+                          <SelectItem value="AU">Australia</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        className="w-full bg-eco hover:bg-eco-dark"
+                      >
+                        Save Changes
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-eco text-eco hover:bg-eco/10"
+                        onClick={() => setIsEditing(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Full Name</p>
+                        <p className="text-lg font-medium">{userProfile.name || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">Email Address</p>
+                        <p className="text-lg font-medium">{userProfile.email || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">Phone Number</p>
+                        <p className="text-lg font-medium">{userProfile.phone || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">Address</p>
+                        <p className="text-lg font-medium">{userProfile.address || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">City</p>
+                        <p className="text-lg font-medium">{userProfile.city || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">State/Province</p>
+                        <p className="text-lg font-medium">{userProfile.state || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">Zip/Postal Code</p>
+                        <p className="text-lg font-medium">{userProfile.zipCode || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">Country</p>
+                        <p className="text-lg font-medium">{userProfile.country || "Not provided"}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-gray-500">Account Type</p>
+                        <p className="text-lg font-medium">{userProfile.accountType || "Standard"}</p>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full mt-6 bg-eco hover:bg-eco-dark"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      Edit Profile
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

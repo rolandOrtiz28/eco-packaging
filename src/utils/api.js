@@ -86,9 +86,11 @@ export const deleteProduct = async (id) => {
   }
 };
 
-export const getBlogPosts = async () => {
+export const getBlogPosts = async ({ page = 1, limit = 10, category, tag, published } = {}) => {
   try {
-    const response = await api.get('/blog-posts');
+    const response = await api.get('/blog-posts', {
+      params: { page, limit, category, tag, published }
+    });
     return response.data;
   } catch (error) {
     console.error('Error fetching blog posts:', error);
@@ -96,26 +98,59 @@ export const getBlogPosts = async () => {
   }
 };
 
-export const getBlogPost = async (id) => {
+export const getBlogPost = async (slug) => {
   try {
-    const response = await api.get(`/blog-post/${id}`);
+    const response = await api.get(`/blog-posts/${slug}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching blog post with ID ${id}:`, error);
+    console.error(`Error fetching blog post with slug ${slug}:`, error);
     throw error;
   }
 };
 
-export const getRelatedPosts = async (id) => {
+export const getRelatedPosts = async (slug) => {
   try {
-    const response = await api.get(`/blog-post/related-posts/${id}`);
+    const response = await api.get(`/blog-posts/related-posts/${slug}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching related posts for blog post ID ${id}:`, error);
+    console.error(`Error fetching related posts for slug ${slug}:`, error);
     throw error;
   }
 };
 
+export const createBlogPost = async (formData) => {
+  try {
+    const response = await api.post('/blog-posts', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating blog post:', error);
+    throw error;
+  }
+};
+
+export const updateBlogPost = async (slug, formData) => {
+  try {
+    const response = await api.put(`/blog-posts/${slug}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating blog post with slug ${slug}:`, error);
+    throw error;
+  }
+};
+
+export const deleteBlogPost = async (slug) => {
+  try {
+    const response = await api.delete(`/blog-posts/${slug}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting blog post with slug ${slug}:`, error);
+    throw error;
+  }
+};
 export const login = async (data) => {
   try {
     console.log("Logging in user:", data);
@@ -154,13 +189,13 @@ export const updateUserProfile = async (userId, updatedData) => {
     return response.data;
   } catch (error) {
     console.error(`Error updating user profile for user ID ${userId}:`, error);
-    throw error;
+    throw new Error(error.response?.data?.error || 'Failed to update profile');
   }
 };
 
 export const getOrders = async () => {
   try {
-    const response = await api.get('/orders');
+    const response = await api.get('/order');
     return response.data;
   } catch (error) {
     console.error('Error fetching orders:', error);
@@ -170,7 +205,7 @@ export const getOrders = async () => {
 
 export const updateOrderStatus = async (id, status) => {
   try {
-    const response = await api.put(`/orders/${id}/status`, { status });
+    const response = await api.put(`/order/${id}/status`, { status });
     return response.data;
   } catch (error) {
     console.error(`Error updating order status with ID ${id}:`, error);

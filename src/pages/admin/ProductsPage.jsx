@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -19,6 +20,7 @@ const INITIAL_FORM_DATA = {
   category: '',
   tags: '',
   featured: false,
+  inStock: true,
   details: {
     size: '',
     color: '',
@@ -62,8 +64,10 @@ const ProductsPage = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name.includes('details.')) {
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else if (name.includes('details.')) {
       const field = name.split('.')[1];
       setFormData(prev => ({ ...prev, details: { ...prev.details, [field]: value } }));
     } else if (name.includes('pricing')) {
@@ -74,6 +78,10 @@ const ProductsPage = () => {
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleCheckboxChange = (name) => (checked) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
   const handleFileChange = (e) => {
@@ -161,6 +169,7 @@ const ProductsPage = () => {
       category: product.category,
       tags: product.tags.join(','),
       featured: product.featured,
+      inStock: product.inStock,
       details: product.details,
       images: [],
       existingImages: product.images || [],
@@ -216,6 +225,7 @@ const ProductsPage = () => {
           <TableHead className="text-eco-dark font-medium text-sm py-3 px-4">Name</TableHead>
           <TableHead className="text-eco-dark font-medium text-sm py-3 px-4 hidden sm:table-cell">Category</TableHead>
           <TableHead className="text-eco-dark font-medium text-sm py-3 px-4 hidden md:table-cell">Price</TableHead>
+          <TableHead className="text-eco-dark font-medium text-sm py-3 px-4 hidden md:table-cell">In Stock</TableHead>
           <TableHead className="w-[80px]"></TableHead>
         </TableRow>
       </TableHeader>
@@ -225,6 +235,9 @@ const ProductsPage = () => {
             <TableCell className="py-3 px-4 text-sm text-eco-dark">{product.name}</TableCell>
             <TableCell className="py-3 px-4 hidden sm:table-cell text-sm">{product.category}</TableCell>
             <TableCell className="py-3 px-4 hidden md:table-cell text-sm">${product.price.toFixed(2)}</TableCell>
+            <TableCell className="py-3 px-4 hidden md:table-cell text-sm">
+              {product.inStock ? 'Yes' : 'No'}
+            </TableCell>
             <TableCell className="py-3 px-4 flex gap-2">
               <Button
                 variant="ghost"
@@ -270,6 +283,18 @@ const ProductsPage = () => {
         className="h-8 text-sm border-eco-light focus:ring-eco focus:border-eco"
         {...extraProps}
       />
+    </div>
+  );
+
+  const renderCheckboxField = (label, id, name, checked) => (
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        id={id}
+        name={name}
+        checked={checked}
+        onCheckedChange={handleCheckboxChange(name)}
+      />
+      <Label htmlFor={id} className="text-sm text-eco-dark">{label}</Label>
     </div>
   );
 
@@ -449,6 +474,7 @@ const ProductsPage = () => {
                     {renderFormField('Pieces per Case', 'pcsPerCase', 'pcsPerCase', formData.pcsPerCase, 'number')}
                     {renderFormField('Category', 'category', 'category', formData.category)}
                     {renderFormField('Tags (comma-separated)', 'tags', 'tags', formData.tags)}
+                    {renderCheckboxField('In Stock', 'inStock', 'inStock', formData.inStock)}
                   </>
                 ))}
               </div>
@@ -527,6 +553,7 @@ const ProductsPage = () => {
                     {renderFormField('Pieces per Case', 'pcsPerCase', 'pcsPerCase', formData.pcsPerCase, 'number')}
                     {renderFormField('Category', 'category', 'category', formData.category)}
                     {renderFormField('Tags (comma-separated)', 'tags', 'tags', formData.tags)}
+                    {renderCheckboxField('In Stock', 'inStock', 'inStock', formData.inStock)}
                   </>
                 ))}
               </div>

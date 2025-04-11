@@ -1,10 +1,9 @@
-// src/pages/HomePage.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingBag, Truck, Badge, Clock, ThumbsUp, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/ProductCard";
-import Testimonials from "@/components/Testimonials"; // Import the new Testimonials component
+import Testimonials from "@/components/Testimonials";
 import { getProducts, getBlogPosts } from "@/utils/api";
 
 const HomePage = () => {
@@ -17,16 +16,18 @@ const HomePage = () => {
       try {
         const products = await getProducts();
         setFeaturedProducts(products.slice(0, 4));
-        
-        const posts = await getBlogPosts();
+
+        const response = await getBlogPosts({ published: true }); // Get published blog posts
+        const posts = response.posts || []; // Access the posts array, default to empty array if undefined
         setBlogPosts(posts.slice(0, 2));
       } catch (error) {
         console.error("Error fetching homepage data:", error);
+        setBlogPosts([]); // Set to empty array on error to prevent rendering issues
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -102,7 +103,7 @@ const HomePage = () => {
                 sizes, from boutique retailers to large corporations, providing customized packaging solutions that align with 
                 their brand values and sustainability goals.
               </p>
-              <Link to="/about"> {/* Updated link to /about */}
+              <Link to="/about">
                 <Button className="bg-eco hover:bg-eco-dark">
                   Learn More About Us
                 </Button>
@@ -136,11 +137,9 @@ const HomePage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map(product => {
-  return (
-    <ProductCard key={product.id} product={product} />
-  );
-})}
+              {featuredProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </div>
           )}
           
@@ -198,7 +197,6 @@ const HomePage = () => {
         </div>
       </section>
 
-
       <section className="section-padding bg-eco-paper">
         <div className="container-custom">
           <div className="text-center mb-12">
@@ -226,40 +224,44 @@ const HomePage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {blogPosts.map(post => (
-                <Link key={post.id} to={`/blog/${post.id}`} className="group">
-                  <div className="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
-                    <div className="h-48 overflow-hidden">
-                      <img 
-                        src={post.image} 
-                        alt={post.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+              {blogPosts.length > 0 ? (
+                blogPosts.map(post => (
+                  <Link key={post.id} to={`/blog/${post.slug}`} className="group">
+                    <div className="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                      <div className="h-48 overflow-hidden">
+                        <img 
+                          src={post.images && post.images.length > 0 ? post.images[0].url : 'https://via.placeholder.com/800x400'} 
+                          alt={post.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="p-6">
+                        <p className="text-sm text-eco font-medium mb-2">
+                          {new Date(post.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                        <h3 className="text-xl font-semibold mb-3 group-hover:text-eco transition-colors">
+                          {post.title}
+                        </h3>
+                        <p className="text-gray-700 mb-4 line-clamp-2">
+                          {post.excerpt}
+                        </p>
+                        <p className="text-eco font-medium inline-flex items-center">
+                          Read More
+                          <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </p>
+                      </div>
                     </div>
-                    <div className="p-6">
-                      <p className="text-sm text-eco font-medium mb-2">
-                        {new Date(post.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                      <h3 className="text-xl font-semibold mb-3 group-hover:text-eco transition-colors">
-                        {post.title}
-                      </h3>
-                      <p className="text-gray-700 mb-4 line-clamp-2">
-                        {post.excerpt}
-                      </p>
-                      <p className="text-eco font-medium inline-flex items-center">
-                        Read More
-                        <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              ) : (
+                <p className="text-center text-gray-700 col-span-2">No blog posts available.</p>
+              )}
             </div>
           )}
           
@@ -273,7 +275,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Add Testimonials Section */}
       <Testimonials />
 
       <section className="py-16 bg-eco text-white">
