@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api, createPromoCode } from "@/utils/api";
+import { api, createPromoCode, getPromoCodes } from "@/utils/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,8 +40,8 @@ const PromoCodesPage = () => {
 
   const fetchPromoCodes = async () => {
     try {
-      const response = await api.get('/promo');
-      setPromoCodes(response.data);
+      const data = await getPromoCodes();
+      setPromoCodes(data);
     } catch (err) {
       console.error("Error fetching promo codes:", err);
       toast.error("Failed to fetch promo codes");

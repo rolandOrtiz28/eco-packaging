@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
+import { getSettings } from "@/utils/api";
 
 const SettingsPage = () => {
   const { isAdmin } = useAuth();
@@ -22,11 +23,11 @@ const SettingsPage = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await api.get('/settings');
+      const data = await getSettings();
       setSettings({
-        taxRate: response.data.taxRate || 0.08,
-        deliveryFee: response.data.deliveryFee || 9.99,
-        freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
+        taxRate: data.taxRate || 0.08,
+        deliveryFee: data.deliveryFee || 9.99,
+        freeDeliveryThreshold: data.freeDeliveryThreshold || 50,
       });
     } catch (err) {
       console.error("Error fetching settings:", err);

@@ -357,6 +357,16 @@ export const completeOrder = async (userId, paypalOrderId, paymentId, orderData)
   }
 };
 
+export const fetchPromoCodes = async () => {
+  try {
+    const response = await api.get('/api/promo');
+    setPromoCodes(response.data);
+  } catch (err) {
+    console.error("Error fetching promo codes:", err);
+    toast.error("Failed to fetch promo codes");
+  }
+};
+
 // PROMO CODES
 export const createPromoCode = async (promoData) => {
   try {
