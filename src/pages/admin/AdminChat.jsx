@@ -27,7 +27,7 @@ function AdminChat() {
   const API_BASE_URL =
     window.location.hostname === "localhost"
       ? "http://localhost:3000"
-      : "https://eco-packaging-backend.onrender.com";
+      : "https://bagstoryapi.editedgemultimedia.com";
 
   useEffect(() => {
     socketRef.current = io(API_BASE_URL, {

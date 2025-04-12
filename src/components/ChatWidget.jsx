@@ -48,7 +48,7 @@ function ChatWidget() {
   const API_BASE_URL =
     window.location.hostname === "localhost"
       ? "http://localhost:3000"
-      : "https://eco-packaging-backend.onrender.com";
+      : "https://bagstoryapi.editedgemultimedia.com";
 
   const initialMessage = {
     id: messageIdCounter.current++,

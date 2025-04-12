@@ -22,20 +22,24 @@ const BlogPage = () => {
   const recentPostsRef = useRef(null);
   const postsGridRef = useRef(null);
 
-  const categories = posts.length 
-    ? Array.from(new Set(posts.flatMap(post => post.categories)))
-    : [];
+  const categories = posts.length
+  ? Array.from(new Set(posts.flatMap(post => post.categories || [])))
+  : [];
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const { posts } = await getBlogPosts({ published: true });
-        setPosts(posts);
-        setFilteredPosts(posts);
-      } catch (error) {
-        console.error("Error fetching blog posts:", error);
-      }
-    };
+   const fetchPosts = async () => {
+  try {
+    const { posts } = await getBlogPosts({ published: true });
+    const normalizedPosts = posts.map(post => ({
+      ...post,
+      categories: post.categories || [],
+    }));
+    setPosts(normalizedPosts);
+    setFilteredPosts(normalizedPosts);
+  } catch (error) {
+    console.error("Error fetching blog posts:", error);
+  }
+};
     
     fetchPosts();
   }, []);

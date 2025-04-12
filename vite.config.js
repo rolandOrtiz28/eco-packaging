@@ -9,17 +9,19 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       '/api': {
-        target: mode === "development"
-          ? 'http://localhost:3000'
-          : 'https://eco-packaging-backend.onrender.com',
+        target: 'http://localhost:3000',
         changeOrigin: true,
-        secure: mode === "development" ? false : true,
+        secure: false,
       },
     },
   },
+  preview: {
+    host: "0.0.0.0",
+    port: 4173,
+  },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
