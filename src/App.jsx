@@ -48,7 +48,7 @@ const App = () => {
   useEffect(() => {
     const logVisit = async () => {
       try {
-        await api.post('/analytics/visit', { pageUrl: location.pathname });
+        await api.post('/api/analytics/visit', { pageUrl: location.pathname });
         console.log('Visit logged for:', location.pathname);
       } catch (err) {
         console.error('Error logging visit:', err);

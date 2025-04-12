@@ -31,7 +31,7 @@ function SidebarCart() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await api.get('/settings');
+        const response = await api.get('/api/settings');
         setSettings({
           taxRate: response.data.taxRate || 0.08,
           deliveryFee: response.data.deliveryFee || 9.99,

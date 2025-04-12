@@ -140,14 +140,16 @@ export const getBlogPosts = async ({ page = 1, limit = 10, category, tag, publis
     const response = await api.get('/api/blog-posts', {
       params: { page, limit, category, tag, published },
     });
-    return Array.isArray(response.data) ? response.data : [];
+    // Return the full response.data object, which is { posts: [...], total: number }
+    return response.data;
   } catch (error) {
     console.error('Error fetching blog posts:', {
       message: error.message,
       status: error.response?.status,
       data: error.response?.data,
     });
-    return [];
+    // Return a fallback object with an empty posts array
+    return { posts: [], total: 0 };
   }
 };
 

@@ -520,7 +520,7 @@ function ChatWidget() {
     <>
       <button
         onClick={toggleChat}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-eco text-white flex items-center justify-center shadow-lg hover:bg-eco-dark transition-all duration-300"
+        className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-eco text-white flex items-center justify-center shadow-lg hover:bg-eco-dark transition-all duration-300 sm:bottom-6 sm:right-6"
         aria-label="Chat with us"
       >
         <MessageSquare size={24} />
@@ -528,7 +528,7 @@ function ChatWidget() {
 
       {chatState === "open" && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white rounded-xl shadow-xl transition-all duration-300 flex flex-col overflow-hidden h-[650px]"
+          className="fixed bottom-16 right-2 left-2 z-50 w-[calc(100vw-1rem)] max-w-[350px] min-w-[250px] mx-auto bg-white rounded-xl shadow-xl transition-all duration-300 flex flex-col overflow-hidden h-[70vh] max-h-[500px] sm:bottom-24 sm:right-6 sm:left-auto sm:w-[90vw] sm:max-w-[400px] sm:min-w-[300px] sm:h-[650px] sm:mx-0"
         >
           <div className="bg-eco text-white p-3 flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -588,7 +588,7 @@ function ChatWidget() {
             ))}
             {showInfoForm && !isAuthenticated && (
               <div className="mb-4 flex justify-start">
-                <div className="bg-white shadow-sm border rounded-lg p-3 max-w-[80%]">
+                <div className="bg-white shadow-sm border rounded-lg p-3 max-w-[80%] w-full">
                   <form onSubmit={handleSubmitInfo} className="space-y-4">
                     <div>
                       <Input
@@ -612,16 +612,16 @@ function ChatWidget() {
                       />
                     </div>
                     <Button
-  type="submit"
-  className="w-full bg-eco hover:bg-eco-dark"
-  disabled={isSubmittingInfo}
->
-  {isSubmittingInfo ? (
-    <Loader2 className="animate-spin w-4 h-4 mx-auto" />
-  ) : (
-    "Submit"
-  )}
-</Button>
+                      type="submit"
+                      className="w-full bg-eco hover:bg-eco-dark"
+                      disabled={isSubmittingInfo}
+                    >
+                      {isSubmittingInfo ? (
+                        <Loader2 className="animate-spin w-4 h-4 mx-auto" />
+                      ) : (
+                        "Submit"
+                      )}
+                    </Button>
                   </form>
                 </div>
               </div>
@@ -644,7 +644,7 @@ function ChatWidget() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message..."
-                  className="min-h-[44px] resize-none"
+                  className="min-h-[44px] resize-none flex-grow"
                   rows={1}
                   disabled={(awaitingHuman && !isHumanConnected) || isLoadingUser || (!isAuthenticated && showInfoForm)}
                 />

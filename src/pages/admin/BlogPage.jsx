@@ -30,11 +30,14 @@ const BlogAdminPage = () => {
 
   const fetchPosts = async () => {
     try {
-      const { posts } = await getBlogPosts();
-      setPosts(posts);
+      const response = await getBlogPosts();
+      console.log("getBlogPosts response:", response); // Debug the response
+      const postsData = response?.posts || []; // Fallback to empty array if posts is undefined
+      setPosts(postsData);
     } catch (err) {
       console.error("Error fetching blog posts:", err);
       toast.error("Failed to fetch blog posts");
+      setPosts([]); // Ensure posts is an array even on error
     }
   };
 
@@ -54,7 +57,8 @@ const BlogAdminPage = () => {
     return <div className="p-4 text-center text-eco-dark">Access denied. Admin only.</div>;
   }
 
-  const filteredPosts = posts.filter(post =>
+  // Guard against undefined posts
+  const filteredPosts = (posts || []).filter(post =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.slug.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -95,7 +99,7 @@ const BlogAdminPage = () => {
               <Card key={post.id} className="border-eco-light">
                 <CardContent className="flex justify-between items-center p-3">
                   <div className="text-sm text-eco-dark">
-                    <span className="font-medium">{post.title}</span> | Slug: {post.slug} | 
+                    <span className="font sufficient">{post.title}</span> | Slug: {post.slug} | 
                     {post.published ? ' Published' : ' Draft'} | 
                     {new Date(post.date).toLocaleDateString()}
                   </div>

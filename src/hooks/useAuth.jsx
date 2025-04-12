@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
 
   const fetchUser = async () => {
     try {
-      const response = await api.get('/auth/user');
+      const response = await api.get('/api/auth/user');
       const userData = response.data;
       setUser(userData);
       setIsAuthenticated(true);
@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     try {
       setLoading(true); // Set loading to true during login
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post('/api/auth/login', credentials);
       const userData = response.data;
       setUser(userData);
       setIsAuthenticated(true);
@@ -62,7 +62,7 @@ export function AuthProvider({ children }) {
     console.log("AuthProvider: logout called");
     try {
       setLoading(true); // Set loading to true during logout
-      await api.post('/auth/logout');
+      await api.post('/api/auth/logout');
       setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
