@@ -55,11 +55,11 @@ module.exports = {
 			foreground: 'hsl(var(--card-foreground))'
 		  },
 		  eco: {
-			DEFAULT: '#2F5233',
+			DEFAULT: '#25553d',
 			light: '#A4C3A2',
-			accent: '#8ECAE6',
+			accent: '#4d93a6',
 			dark: '#1A2E1A',
-			paper: '#F8F4E3'
+			paper: '#dfddd7'
 		  }
 		},
 		borderRadius: {

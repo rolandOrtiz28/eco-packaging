@@ -43,7 +43,7 @@ function Header() {
                 <span className="text-white font-bold text-xl">E</span>
               </div> */}
               <div className="hidden md:block">
-                <img className="w-24" src="https://res.cloudinary.com/rolandortiz/image/upload/v1744076811/BagStory/Bag-Store-Logo-new_cuf411.png" alt="" />
+                <img className="w-40" src="https://res.cloudinary.com/rolandortiz/image/upload/v1744535303/BagStory/Logo_1_jsurar.png" alt="" />
               </div>
             </div>
           </Link>
@@ -70,14 +70,14 @@ function Header() {
               About
             </NavLink>
             <NavLink 
-              to="/advertisement"
+              to="/custombags"
               className={({ isActive }) => 
                 `text-sm font-medium transition-colors hover:text-eco ${
                   isActive ? "text-eco" : "text-foreground"
                 }`
               }
             >
-              Advertisement
+              Custom Bags
             </NavLink>
             <NavLink 
               to="/retail" 

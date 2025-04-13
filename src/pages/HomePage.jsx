@@ -256,7 +256,7 @@ const HomePage = () => {
               <div className="relative">
                 <img
                   ref={heroImageRef}
-                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744274457/BagStory/Hero_ap2vi2.png"
+                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744535099/BagStory/Untitled_design_epux3t.png"
                   alt="Eco-friendly bags"
                   className="rounded-lg shadow-lg max-w-full h-auto"
                   onError={(e) => {

@@ -19,7 +19,7 @@ import BlogPage from "./pages/BlogPage";
 import BlogPostPage from "./pages/BlogPostPage";
 import ContactPage from "./pages/ContactPage";
 import AboutPage from "./pages/AboutPage";
-import AdvertisementPage from "./pages/AdvertisementPage";
+import CustomBagsPage from "./pages/CustomBagsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -98,7 +98,7 @@ const App = () => {
                 <Route path="blog/:slug" element={<BlogPostPage />} />
                 <Route path="contact" element={<ContactPage />} />
                 <Route path="about" element={<AboutPage />} />
-                <Route path="advertisement" element={<AdvertisementPage />} />
+                <Route path="custombags" element={<CustomBagsPage />} />
                 <Route path="payment-returns" element={<PaymentReturnsPage />} />
                 <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="login" element={<LoginPage />} />

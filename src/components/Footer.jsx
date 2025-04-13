@@ -30,18 +30,15 @@ function Footer() {
       <div className="container-custom py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center space-x-2 mb-6">
+            <div className="flex items-center space-x-2 ">
               <div className="w-lg flex items-center justify-center">
                 <img
-                  className="w-24"
-                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744076811/BagStory/Bag-Store-Logo-new_cuf411.png"
+                  className="w-64"
+                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744536373/BagStory/Logo_Light_rvng7u.png"
                   alt=""
                 />
               </div>
-              <div>
-                <h3 className="text-xl font-bold">Eco Packaging</h3>
-                <p className="text-xs opacity-80">Products Inc.</p>
-              </div>
+             
             </div>
             <p className="mb-6 text-sm opacity-90">
               Leading the way in sustainable packaging solutions since 2010. We design, produce and
