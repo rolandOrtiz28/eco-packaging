@@ -15,8 +15,12 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/utils/api";
-import { updateUserProfile, createPaypalOrder, capturePaypalOrder, completeOrder } from "@/utils/api";
+import { api, updateUserProfile, createPaypalOrder, capturePaypalOrder, createStripePaymentIntent, completeStripeOrder, completeOrder } from "@/utils/api";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+// Initialize Stripe with your publishable key
+const stripePromise = loadStripe("pk_test_51NBEUkEuIAA6PeVXXXX...");
 
 const CheckoutPage = () => {
   const { cartItems, clearCart, discount } = useCart();
@@ -46,9 +50,10 @@ const CheckoutPage = () => {
   const [country, setCountry] = useState("US");
   const [saveInfo, setSaveInfo] = useState(false);
 
-  const [paymentMethod, setPaymentMethod] = useState("paypal");
+  const [paymentMethod, setPaymentMethod] = useState(null);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
 
-  // Fetch tax and delivery settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -66,7 +71,6 @@ const CheckoutPage = () => {
     fetchSettings();
   }, []);
 
-  // Pre-fill user details when user is loaded
   useEffect(() => {
     if (user) {
       console.log('User data:', user);
@@ -83,50 +87,43 @@ const CheckoutPage = () => {
     }
   }, [user]);
 
-  // Save step to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("checkoutStep", step);
   }, [step]);
 
-  // Handle PayPal redirect callback
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const token = query.get('token');
     const payerId = query.get('PayerID');
 
-    if (token && payerId && user && !authLoading) {
-      handlePaymentCapture(token, payerId);
+    if (token && payerId && user && !authLoading && paymentMethod === 'paypal' && paymentInitiated) {
+      handlePaypalPaymentCapture(token, payerId);
     } else if (token && payerId && !user && !authLoading) {
       toast.error("Please log in to complete your order.");
       navigate("/login");
     }
-  }, [location, user, authLoading]);
+  }, [location, user, authLoading, paymentMethod, paymentInitiated]);
 
-  // Redirect to profile after confirmation
   useEffect(() => {
     if (step === "confirmation") {
       const timer = setTimeout(() => {
         localStorage.removeItem("checkoutStep");
         navigate("/profile");
-      }, 5000); // 5-second delay
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [step, navigate]);
 
-  // Function to determine the price per case based on quantity
   const getPricePerCase = (item) => {
     const quantity = item.quantity;
     const unitsPerCase = item.pcsPerCase;
-
     let pricePerUnit = item.price;
     if (quantity >= 6 && quantity <= 50) {
       pricePerUnit = item.bulkPrice;
     }
-
     return pricePerUnit * unitsPerCase;
   };
 
-  // Calculate totals
   const subtotal = cartItems.reduce(
     (total, item) => total + getPricePerCase(item) * item.quantity,
     0
@@ -140,19 +137,17 @@ const CheckoutPage = () => {
       toast.error("Please fill in all required fields");
       return false;
     }
-
     if (!email.includes('@') || !email.includes('.')) {
       toast.error("Please enter a valid email address");
       return false;
     }
-
     return true;
   };
 
   const handleDetailsSubmit = async (e) => {
     e.preventDefault();
     if (!validateDetails()) return;
-  
+
     try {
       const updatedData = {
         name: `${firstName} ${lastName}`.trim(),
@@ -164,16 +159,16 @@ const CheckoutPage = () => {
         zipCode,
         country,
       };
-  
+
       if (user && saveInfo && user.id) {
         await updateUserProfile(user.id, updatedData);
-        await refreshUser(); // Refresh user data
+        await refreshUser();
         toast.success("Your info has been saved for future orders.");
       } else if (user && saveInfo && !user.id) {
         console.error("User ID is undefined:", user);
         toast.error("Unable to save profile: User ID is missing.");
       }
-  
+
       setStep("payment");
       window.scrollTo(0, 0);
     } catch (err) {
@@ -181,41 +176,19 @@ const CheckoutPage = () => {
       toast.error(err.message || "Failed to save your information. Please try again.");
     }
   };
-  
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
-    setIsProcessing(true);
 
-    try {
-      const orderData = {
-        items: cartItems.map(item => ({
-          productId: item.id,
-          quantity: item.quantity,
-          price: getPricePerCase(item),
-          name: item.name,
-          moq: item.moq,
-          pcsPerCase: item.pcsPerCase,
-        })),
-        total,
-        discount, // Include discount in order data
-      };
-      console.log('Creating PayPal order with data:', orderData); // Add logging
-      const { approvalUrl } = await createPaypalOrder(user.id, orderData);
-      window.location.href = approvalUrl;
-    } catch (err) {
-      console.error("Failed to initiate payment:", err);
-      toast.error(err.message || "Failed to initiate payment");
-      setIsProcessing(false);
+    if (!paymentMethod) {
+      toast.error("Please select a payment method.");
+      return;
     }
-  };
 
-  const handlePaymentCapture = async (token, payerId) => {
     setIsProcessing(true);
+    setPaymentInitiated(true);
+
     try {
-      const captureData = await capturePaypalOrder(token, payerId);
-      console.log("Payment captured:", captureData);
-  
       const orderData = {
         items: cartItems.map(item => ({
           productId: item.id,
@@ -228,22 +201,67 @@ const CheckoutPage = () => {
         total,
         discount,
       };
-      console.log('Completing order with data:', orderData);
+
+      if (paymentMethod === 'paypal') {
+        console.log('Creating PayPal order with data:', orderData);
+        const { approvalUrl } = await createPaypalOrder(user.id, orderData);
+        window.location.href = approvalUrl;
+      } else if (paymentMethod === 'stripe') {
+        console.log('Creating Stripe payment intent with data:', orderData);
+        const { clientSecret, paymentIntentId } = await createStripePaymentIntent(user.id, orderData);
+        console.log('Stripe clientSecret set:', clientSecret);
+        setClientSecret(clientSecret);
+        localStorage.setItem('stripePaymentIntentId', paymentIntentId);
+      }
+    } catch (err) {
+      console.error("Failed to initiate payment:", err);
+      toast.error(err.message || "Failed to initiate payment");
+      setIsProcessing(false);
+      setPaymentInitiated(false);
+    }
+  };
+
+  const handlePaypalPaymentCapture = async (token, payerId) => {
+    setIsProcessing(true);
+    try {
+      const captureData = await capturePaypalOrder(token, payerId);
+      console.log("PayPal payment captured:", captureData);
+
+      if (captureData.status !== 'COMPLETED') {
+        throw new Error("PayPal payment capture failed");
+      }
+
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: getPricePerCase(item),
+          name: item.name,
+          moq: item.moq,
+          pcsPerCase: item.pcsPerCase,
+        })),
+        total,
+        discount,
+      };
+
       if (!user || !user.id) {
         throw new Error("User ID is missing");
       }
-      const orderResult = await completeOrder(user.id, token, captureData.paymentId, orderData);
-      console.log("Order completed:", orderResult);
-  
+
+      const orderResult = await completeOrder(user.id, token, captureData.paymentId, orderData, 'paypal');
+      console.log("PayPal order completed:", orderResult);
+
       clearCart();
+      console.log("Cart cleared after PayPal payment");
       setStep("confirmation");
       window.scrollTo(0, 0);
       navigate('/checkout', { replace: true });
     } catch (err) {
-      console.error("Payment capture failed:", err);
+      console.error("PayPal payment capture failed:", err);
       toast.error(err.message || "Payment capture failed. Please try again.");
       setStep("payment");
       setIsProcessing(false);
+      setPaymentInitiated(false);
     }
   };
 
@@ -471,60 +489,25 @@ const CheckoutPage = () => {
         )}
 
         {step === "payment" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Payment Method</h2>
-                </div>
-                <form onSubmit={handlePaymentSubmit} className="p-6">
-                  <div className="mb-6">
-                    <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value)}>
-                      <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
-                        <RadioGroupItem value="paypal" id="payment-paypal" />
-                        <Label htmlFor="payment-paypal">PayPal</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {paymentMethod === "paypal" && (
-                    <div className="text-center py-6">
-                      <p className="mb-4">Click below to pay with PayPal.</p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 mt-6">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => setStep("details")}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 bg-eco hover:bg-eco-dark"
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? "Processing..." : "Pay with PayPal"}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </div>
-
-            <div className="lg:col-span-1">
-              <OrderSummary
-                cartItems={cartItems}
-                subtotal={subtotal}
-                shipping={shipping}
-                tax={tax}
-                total={total}
-                discount={discount}
-              />
-            </div>
-          </div>
+          <PaymentForm
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            handlePaymentSubmit={handlePaymentSubmit}
+            isProcessing={isProcessing}
+            setIsProcessing={setIsProcessing}
+            clientSecret={clientSecret}
+            cartItems={cartItems}
+            subtotal={subtotal}
+            shipping={shipping}
+            tax={tax}
+            total={total}
+            discount={discount}
+            user={user}
+            setStep={setStep}
+            clearCart={clearCart}
+            navigate={navigate}
+            stripePromise={stripePromise}
+          />
         )}
 
         {step === "confirmation" && (
@@ -551,6 +534,233 @@ const CheckoutPage = () => {
             </Button>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Sub-component for Stripe payment form
+const StripePaymentForm = ({
+  clientSecret,
+  cartItems,
+  user,
+  setStep,
+  clearCart,
+  navigate,
+  setIsProcessing,
+}) => {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const handleStripePayment = async (e) => {
+    e.preventDefault();
+    console.log("handleStripePayment called");
+    console.log("stripe:", stripe);
+    console.log("elements:", elements);
+    console.log("clientSecret:", clientSecret);
+
+    if (!stripe || !elements || !clientSecret) {
+      console.error("Stripe payment failed due to missing dependencies");
+      toast.error("Stripe is not loaded or payment intent is missing");
+      setIsProcessing(false);
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        console.error("CardElement not found");
+        throw new Error("Card input field not found");
+      }
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: user.name,
+            email: user.email,
+          },
+        },
+      });
+
+      if (error) {
+        console.error("Stripe payment error:", error);
+        toast.error(error.message || "Payment failed. Please try again.");
+        setIsProcessing(false);
+        return;
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        const paymentIntentId = localStorage.getItem('stripePaymentIntentId');
+        const orderData = {
+          items: cartItems.map(item => ({
+            productId: item.id,
+            quantity: item.quantity,
+            price: (item.quantity >= 6 && item.quantity <= 50 ? item.bulkPrice : item.price) * item.pcsPerCase,
+            name: item.name,
+            moq: item.moq,
+            pcsPerCase: item.pcsPerCase,
+          })),
+          total,
+          discount,
+        };
+
+        const orderResult = await completeStripeOrder(user.id, paymentIntentId, orderData);
+        console.log("Stripe order completed:", orderResult);
+
+        localStorage.removeItem('stripePaymentIntentId');
+        clearCart();
+        console.log("Cart cleared after Stripe payment");
+        setStep("confirmation");
+        window.scrollTo(0, 0);
+        navigate('/checkout', { replace: true });
+      }
+    } catch (err) {
+      console.error("Stripe payment processing failed:", err);
+      toast.error(err.message || "Payment processing failed. Please try again.");
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="mb-6">
+      <Label className="block mb-2">Card Details</Label>
+      <CardElement
+        options={{
+          style: {
+            base: {
+              fontSize: '16px',
+              color: '#424770',
+              '::placeholder': { color: '#aab7c4' },
+            },
+            invalid: { color: '#9e2146' },
+          },
+        }}
+      />
+    </div>
+  );
+};
+
+const PaymentForm = ({
+  paymentMethod,
+  setPaymentMethod,
+  handlePaymentSubmit,
+  isProcessing,
+  setIsProcessing,
+  clientSecret,
+  cartItems,
+  subtotal,
+  shipping,
+  tax,
+  total,
+  discount,
+  user,
+  setStep,
+  clearCart,
+  navigate,
+  stripePromise,
+}) => {
+  const [stripeFormSubmitted, setStripeFormSubmitted] = useState(false);
+
+  const handleFormSubmit = async (e) => {
+    if (paymentMethod === 'stripe') {
+      if (!clientSecret) {
+        await handlePaymentSubmit(e);
+        setStripeFormSubmitted(true);
+      }
+    } else {
+      handlePaymentSubmit(e);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="border-b px-6 py-4">
+            <h2 className="font-semibold">Payment Method</h2>
+          </div>
+          <form
+            onSubmit={(e) => {
+              if (paymentMethod === 'stripe' && clientSecret) {
+                handleStripePayment(e);
+              } else {
+                handleFormSubmit(e);
+              }
+            }}
+            className="p-6"
+          >
+            <div className="mb-6">
+              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value)}>
+                <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
+                  <RadioGroupItem value="paypal" id="payment-paypal" />
+                  <Label htmlFor="payment-paypal">PayPal</Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
+                  <RadioGroupItem value="stripe" id="payment-stripe" />
+                  <Label htmlFor="payment-stripe">Credit/Debit Card</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {paymentMethod === 'paypal' && (
+              <div className="text-center py-6">
+                <p className="mb-4">Click below to pay with PayPal.</p>
+              </div>
+            )}
+
+            {paymentMethod === 'stripe' && clientSecret && stripeFormSubmitted && (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <StripePaymentForm
+                  clientSecret={clientSecret}
+                  cartItems={cartItems}
+                  user={user}
+                  setStep={setStep}
+                  clearCart={clearCart}
+                  navigate={navigate}
+                  setIsProcessing={setIsProcessing}
+                />
+              </Elements>
+            )}
+
+            <div className="flex gap-4 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setStep("details")}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-eco hover:bg-eco-dark"
+                disabled={isProcessing || !paymentMethod}
+              >
+                {isProcessing
+                  ? "Processing..."
+                  : paymentMethod === 'paypal'
+                  ? "Pay with PayPal"
+                  : paymentMethod === 'stripe'
+                  ? "Pay with Card"
+                  : "Select a Payment Method"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div className="lg:col-span-1">
+        <OrderSummary
+          cartItems={cartItems}
+          subtotal={subtotal}
+          shipping={shipping}
+          tax={tax}
+          total={total}
+          discount={discount}
+        />
       </div>
     </div>
   );

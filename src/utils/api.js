@@ -6,7 +6,6 @@ const API_BASE_URL =
     ? "http://localhost:3000"
     : "https://bagstoryapi.editedgemultimedia.com";
 
-// Create an axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -15,7 +14,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Add response interceptor for detailed error logging
 api.interceptors.response.use(
   response => response,
   error => {
@@ -140,7 +138,6 @@ export const getBlogPosts = async ({ page = 1, limit = 10, category, tag, publis
     const response = await api.get('/api/blog-posts', {
       params: { page, limit, category, tag, published },
     });
-    // Return the full response.data object, which is { posts: [...], total: number }
     return response.data;
   } catch (error) {
     console.error('Error fetching blog posts:', {
@@ -148,7 +145,6 @@ export const getBlogPosts = async ({ page = 1, limit = 10, category, tag, publis
       status: error.response?.status,
       data: error.response?.data,
     });
-    // Return a fallback object with an empty posts array
     return { posts: [], total: 0 };
   }
 };
@@ -343,9 +339,9 @@ export const capturePaypalOrder = async (token, payerId) => {
   }
 };
 
-export const completeOrder = async (userId, paypalOrderId, paymentId, orderData) => {
+export const completeOrder = async (userId, paypalOrderId, paymentId, orderData, paymentMethod) => {
   try {
-    const response = await api.post('/api/order/complete', { userId, paypalOrderId, paymentId, ...orderData });
+    const response = await api.post('/api/order/complete', { userId, paypalOrderId, paymentId, ...orderData, paymentMethod });
     return response.data;
   } catch (error) {
     console.error('Error completing order:', {
@@ -357,7 +353,39 @@ export const completeOrder = async (userId, paypalOrderId, paymentId, orderData)
   }
 };
 
-export const fetchPromoCodes = async () => {
+// Added Stripe functions to fix the error
+export const createStripePaymentIntent = async (userId, orderData) => {
+  try {
+    const response = await api.post('/api/order/stripe/create', { userId, ...orderData });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe payment intent:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+export const completeStripeOrder = async (userId, paymentIntentId, orderData) => {
+  try {
+    const response = await api.post('/api/order/stripe/complete', { userId, paymentIntentId, ...orderData });
+    return response.data;
+  } catch (error) {
+    console.error('Error completing Stripe order:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+// PROMO CODES
+// Note: fetchPromoCodes has an issue - it uses setPromoCodes which is undefined
+// You should either remove this function or fix it by passing setPromoCodes as a parameter
+export const fetchPromoCodes = async (setPromoCodes) => {
   try {
     const response = await api.get('/api/promo');
     setPromoCodes(response.data);
@@ -367,7 +395,6 @@ export const fetchPromoCodes = async () => {
   }
 };
 
-// PROMO CODES
 export const createPromoCode = async (promoData) => {
   try {
     const response = await api.post('/api/promo', promoData);
