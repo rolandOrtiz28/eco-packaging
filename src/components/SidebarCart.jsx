@@ -23,6 +23,7 @@ function SidebarCart() {
     taxRate: 0.08,
     deliveryFee: 9.99,
     freeDeliveryThreshold: 50,
+    surCharge: 0,
   });
 
   const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -32,11 +33,15 @@ function SidebarCart() {
     const fetchSettings = async () => {
       try {
         const response = await api.get('/api/settings');
-        setSettings({
-          taxRate: response.data.taxRate?.value || 0.08,
-          deliveryFee: response.data.deliveryFee?.value || 9.99,
-          freeDeliveryThreshold: response.data.freeDeliveryThreshold?.value || 50,
-        });
+        console.log('SidebarCart - Fetched settings from API:', response.data);
+        const updatedSettings = {
+          taxRate: (response.data.taxRate !== undefined && response.data.taxRate !== null && !isNaN(parseFloat(response.data.taxRate))) ? parseFloat(response.data.taxRate) : 0.08,
+          deliveryFee: (response.data.deliveryFee !== undefined && response.data.deliveryFee !== null && !isNaN(parseFloat(response.data.deliveryFee))) ? parseFloat(response.data.deliveryFee) : 9.99,
+          freeDeliveryThreshold: (response.data.freeDeliveryThreshold !== undefined && response.data.freeDeliveryThreshold !== null && !isNaN(parseFloat(response.data.freeDeliveryThreshold))) ? parseFloat(response.data.freeDeliveryThreshold) : 50,
+          surCharge: (response.data.surCharge !== undefined && response.data.surCharge !== null && !isNaN(parseFloat(response.data.surCharge))) ? parseFloat(response.data.surCharge) : 0,
+        };
+        console.log('SidebarCart - Updated settings state:', updatedSettings);
+        setSettings(updatedSettings);
       } catch (err) {
         console.error("Error fetching settings:", err);
         toast.error("Failed to fetch tax and delivery settings");
@@ -65,7 +70,8 @@ function SidebarCart() {
 
   const shipping = subtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
   const tax = subtotal * settings.taxRate;
-  const total = subtotal + shipping + tax - discount;
+  const surCharge = settings.surCharge;
+  const total = subtotal + shipping + tax + surCharge - discount;
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -241,6 +247,10 @@ function SidebarCart() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tax</span>
                   <span>${tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Surcharge</span>
+                  <span>${surCharge.toFixed(2)}</span>
                 </div>
                 
                 <Separator className="my-2" />

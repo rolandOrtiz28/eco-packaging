@@ -17,6 +17,7 @@ const CartPage = () => {
     taxRate: 0.08,
     deliveryFee: 9.99,
     freeDeliveryThreshold: 50,
+    surCharge: 0,
   });
   const navigate = useNavigate();
 
@@ -24,11 +25,15 @@ const CartPage = () => {
     const fetchSettings = async () => {
       try {
         const response = await api.get('/api/settings');
-        setSettings({
-          taxRate: response.data.taxRate?.value || 0.08,
-          deliveryFee: response.data.deliveryFee?.value || 9.99,
-          freeDeliveryThreshold: response.data.freeDeliveryThreshold?.value || 50,
-        });
+        console.log('CartPage - Fetched settings from API:', response.data);
+        const updatedSettings = {
+          taxRate: (response.data.taxRate !== undefined && response.data.taxRate !== null && !isNaN(parseFloat(response.data.taxRate))) ? parseFloat(response.data.taxRate) : 0.08,
+          deliveryFee: (response.data.deliveryFee !== undefined && response.data.deliveryFee !== null && !isNaN(parseFloat(response.data.deliveryFee))) ? parseFloat(response.data.deliveryFee) : 9.99,
+          freeDeliveryThreshold: (response.data.freeDeliveryThreshold !== undefined && response.data.freeDeliveryThreshold !== null && !isNaN(parseFloat(response.data.freeDeliveryThreshold))) ? parseFloat(response.data.freeDeliveryThreshold) : 50,
+          surCharge: (response.data.surCharge !== undefined && response.data.surCharge !== null && !isNaN(parseFloat(response.data.surCharge))) ? parseFloat(response.data.surCharge) : 0,
+        };
+        console.log('CartPage - Updated settings state:', updatedSettings);
+        setSettings(updatedSettings);
       } catch (err) {
         console.error("Error fetching settings:", err);
         toast.error("Failed to fetch tax and delivery settings");
@@ -60,7 +65,8 @@ const CartPage = () => {
 
   const shipping = subtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
   const tax = subtotal * settings.taxRate;
-  const total = subtotal + shipping + tax - discount;
+  const surCharge = settings.surCharge;
+  const total = subtotal + shipping + tax + surCharge - discount;
 
   const handleQuantityChange = (id, newQuantity) => {
     updateQuantity(id, newQuantity);
@@ -243,6 +249,10 @@ const CartPage = () => {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Estimated Tax</span>
                       <span>${tax.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Surcharge</span>
+                      <span>${surCharge.toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-3 mt-3">
                       <div className="flex justify-between font-semibold">

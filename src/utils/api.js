@@ -285,7 +285,7 @@ export const updateUserProfile = async (userId, updatedData) => {
 // ORDERS
 export const getOrders = async () => {
   try {
-    const response = await api.get('/api/orders');
+    const response = await api.get('/api/order');
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching orders:', {
@@ -353,6 +353,7 @@ export const completeOrder = async (userId, paypalOrderId, paymentId, orderData,
   }
 };
 
+// Added Stripe functions to fix the error
 export const createStripePaymentIntent = async (userId, orderData) => {
   try {
     const response = await api.post('/api/order/stripe/create', { userId, ...orderData });
@@ -371,7 +372,7 @@ export const completeStripeOrder = async (userId, paymentId, orderData) => {
   try {
     const response = await api.post('/api/order/stripe/complete', {
       userId,
-      paymentId,
+      paymentId, // Ensure paymentId is included
       items: orderData.items,
       total: orderData.total,
       discount: orderData.discount,
@@ -384,22 +385,9 @@ export const completeStripeOrder = async (userId, paymentId, orderData) => {
   }
 };
 
-// RECEIPTS
-export const getReceipts = async () => {
-  try {
-    const response = await api.get('/api/receipts');
-    return Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    console.error('Error fetching receipts:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
-    return [];
-  }
-};
-
 // PROMO CODES
+// Note: fetchPromoCodes has an issue - it uses setPromoCodes which is undefined
+// You should either remove this function or fix it by passing setPromoCodes as a parameter
 export const fetchPromoCodes = async (setPromoCodes) => {
   try {
     const response = await api.get('/api/promo');

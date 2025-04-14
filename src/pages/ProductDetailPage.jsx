@@ -39,7 +39,7 @@ const ProductDetailPage = () => {
 
     const fetchSettings = async () => {
       try {
-        const response = await api.get('/settings');
+        const response = await api.get('/api/settings');
         setSettings({
           freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
         });
