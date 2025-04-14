@@ -854,7 +854,7 @@ const PaymentForm = ({
                   <RadioGroupItem value="paypal" id="payment-paypal" />
                   <Label htmlFor="payment-paypal" className="flex items-center">
                     <img
-                      src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg"
+                      src="https://res.cloudinary.com/rolandortiz/image/upload/v1744599232/bagstoryCustom/5cecf2c1ee40676bcef484efe1853bff_d5imh7.png"
                       alt="PayPal Logo"
                       className="h-6 w-auto mr-2"
                     />
@@ -865,7 +865,7 @@ const PaymentForm = ({
                   <RadioGroupItem value="stripe" id="payment-stripe" />
                   <Label htmlFor="payment-stripe" className="flex items-center">
                     <img
-                      src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png"
+                      src="https://res.cloudinary.com/rolandortiz/image/upload/v1744599232/bagstoryCustom/478c619017eeac70f846790f388f4982_p4ahyc.png"
                       alt="Credit Card Logo"
                       className="h-6 w-auto mr-2"
                     />
