@@ -20,7 +20,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 // Initialize Stripe with your publishable key
-const stripePromise = loadStripe("pk_test_51NBEUkEuIAA6PeVXXXX...");
+const stripePromise = loadStripe("pk_test_51NBUeuKIAap6PevkXRO1FHavYGMCu5nPcc3GQGeBSHmnzhg6qZjvDwhTYotdKXmiiGypNVcY4YLTNOZ4rcs3s9dy00qgHaIJxR");
 
 const CheckoutPage = () => {
   const { cartItems, clearCart, discount } = useCart();
@@ -32,6 +32,9 @@ const CheckoutPage = () => {
     const savedStep = localStorage.getItem("checkoutStep");
     return savedStep || "details";
   });
+  useEffect(() => {
+    console.log("Current step:", step);
+  }, [step]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [settings, setSettings] = useState({
     taxRate: 0.08,
@@ -113,6 +116,37 @@ const CheckoutPage = () => {
       return () => clearTimeout(timer);
     }
   }, [step, navigate]);
+
+  useEffect(() => {
+    const initStripeIntent = async () => {
+      if (paymentMethod === 'stripe' && !clientSecret) {
+        try {
+          const orderData = {
+            items: cartItems.map(item => ({
+              productId: item.id,
+              quantity: item.quantity,
+              price: getPricePerCase(item),
+              name: item.name,
+              moq: item.moq,
+              pcsPerCase: item.pcsPerCase,
+            })),
+            total,
+            discount,
+          };
+  
+          const { clientSecret, paymentIntentId } = await createStripePaymentIntent(user.id, orderData);
+          setClientSecret(clientSecret);
+          localStorage.setItem('stripePaymentIntentId', paymentIntentId);
+        } catch (err) {
+          toast.error("Failed to load card form.");
+          console.error("Stripe intent error:", err);
+        }
+      }
+    };
+  
+    initStripeIntent();
+  }, [paymentMethod]);
+  
 
   const getPricePerCase = (item) => {
     const quantity = item.quantity;
@@ -544,37 +578,32 @@ const StripePaymentForm = ({
   clientSecret,
   cartItems,
   user,
+  total,
+  discount,
   setStep,
   clearCart,
   navigate,
   setIsProcessing,
+  isProcessing,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const [isCardComplete, setIsCardComplete] = useState(false);
 
   const handleStripePayment = async (e) => {
     e.preventDefault();
     console.log("handleStripePayment called");
-    console.log("stripe:", stripe);
-    console.log("elements:", elements);
-    console.log("clientSecret:", clientSecret);
 
     if (!stripe || !elements || !clientSecret) {
-      console.error("Stripe payment failed due to missing dependencies");
-      toast.error("Stripe is not loaded or payment intent is missing");
-      setIsProcessing(false);
+      toast.error("Stripe is not ready");
       return;
     }
 
+    // Ensure the UI updates immediately by setting isProcessing
     setIsProcessing(true);
 
     try {
       const cardElement = elements.getElement(CardElement);
-      if (!cardElement) {
-        console.error("CardElement not found");
-        throw new Error("Card input field not found");
-      }
-
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -586,14 +615,12 @@ const StripePaymentForm = ({
       });
 
       if (error) {
-        console.error("Stripe payment error:", error);
-        toast.error(error.message || "Payment failed. Please try again.");
+        toast.error(error.message || "Payment failed");
         setIsProcessing(false);
         return;
       }
 
       if (paymentIntent.status === 'succeeded') {
-        const paymentIntentId = localStorage.getItem('stripePaymentIntentId');
         const orderData = {
           items: cartItems.map(item => ({
             productId: item.id,
@@ -605,48 +632,112 @@ const StripePaymentForm = ({
           })),
           total,
           discount,
+          paymentMethod: 'stripe',
         };
 
-        const orderResult = await completeStripeOrder(user.id, paymentIntentId, orderData);
-        console.log("Stripe order completed:", orderResult);
+        console.log("Sending paymentId to completeStripeOrder:", paymentIntent.id);
+        const result = await completeStripeOrder(user.id, paymentIntent.id, orderData);
+        console.log("Stripe order completed:", result);
 
         localStorage.removeItem('stripePaymentIntentId');
         clearCart();
-        console.log("Cart cleared after Stripe payment");
         setStep("confirmation");
         window.scrollTo(0, 0);
-        navigate('/checkout', { replace: true });
       }
     } catch (err) {
-      console.error("Stripe payment processing failed:", err);
-      toast.error(err.message || "Payment processing failed. Please try again.");
+      console.error("Stripe error:", err);
+      toast.error(err.message || "Payment failed");
+    } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="mb-6">
-      <Label className="block mb-2">Card Details</Label>
-      <CardElement
-        options={{
-          style: {
-            base: {
-              fontSize: '16px',
-              color: '#424770',
-              '::placeholder': { color: '#aab7c4' },
+    <form onSubmit={handleStripePayment}>
+      <div className="mb-6">
+        <Label className="block mb-2">Card Details</Label>
+        <CardElement
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': { color: '#aab7c4' },
+              },
+              invalid: { color: '#9e2146' },
             },
-            invalid: { color: '#9e2146' },
-          },
-        }}
-      />
-    </div>
+          }}
+          onChange={(e) => setIsCardComplete(e.complete)}
+        />
+      </div>
+      <div className="flex gap-4 mt-6 relative">
+        <Button
+          type="submit"
+          className="flex-1 bg-eco hover:bg-eco-dark flex items-center justify-center"
+          disabled={isProcessing || !isCardComplete}
+        >
+          {isProcessing ? (
+            <>
+              <svg
+                className="animate-spin h-5 w-5 mr-2 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
+              Processing...
+            </>
+          ) : (
+            "Pay with Card"
+          )}
+        </Button>
+        {isProcessing && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50 rounded">
+            <svg
+              className="animate-spin h-8 w-8 text-eco"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+          </div>
+        )}
+      </div>
+    </form>
   );
 };
+
+
 
 const PaymentForm = ({
   paymentMethod,
   setPaymentMethod,
-  handlePaymentSubmit,
   isProcessing,
   setIsProcessing,
   clientSecret,
@@ -662,19 +753,6 @@ const PaymentForm = ({
   navigate,
   stripePromise,
 }) => {
-  const [stripeFormSubmitted, setStripeFormSubmitted] = useState(false);
-
-  const handleFormSubmit = async (e) => {
-    if (paymentMethod === 'stripe') {
-      if (!clientSecret) {
-        await handlePaymentSubmit(e);
-        setStripeFormSubmitted(true);
-      }
-    } else {
-      handlePaymentSubmit(e);
-    }
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
@@ -682,18 +760,10 @@ const PaymentForm = ({
           <div className="border-b px-6 py-4">
             <h2 className="font-semibold">Payment Method</h2>
           </div>
-          <form
-            onSubmit={(e) => {
-              if (paymentMethod === 'stripe' && clientSecret) {
-                handleStripePayment(e);
-              } else {
-                handleFormSubmit(e);
-              }
-            }}
-            className="p-6"
-          >
+          
+          <div className="p-6">
             <div className="mb-6">
-              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value)}>
+              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                 <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
                   <RadioGroupItem value="paypal" id="payment-paypal" />
                   <Label htmlFor="payment-paypal">PayPal</Label>
@@ -705,18 +775,22 @@ const PaymentForm = ({
               </RadioGroup>
             </div>
 
+            {/* PayPal Instructions */}
             {paymentMethod === 'paypal' && (
               <div className="text-center py-6">
                 <p className="mb-4">Click below to pay with PayPal.</p>
               </div>
             )}
 
-            {paymentMethod === 'stripe' && clientSecret && stripeFormSubmitted && (
+            {/* Stripe Payment Form */}
+            {paymentMethod === 'stripe' && clientSecret && (
               <Elements stripe={stripePromise} options={{ clientSecret }}>
                 <StripePaymentForm
                   clientSecret={clientSecret}
                   cartItems={cartItems}
                   user={user}
+                  total={total}
+                  discount={discount}
                   setStep={setStep}
                   clearCart={clearCart}
                   navigate={navigate}
@@ -725,33 +799,31 @@ const PaymentForm = ({
               </Elements>
             )}
 
-            <div className="flex gap-4 mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setStep("details")}
-              >
-                Back
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-eco hover:bg-eco-dark"
-                disabled={isProcessing || !paymentMethod}
-              >
-                {isProcessing
-                  ? "Processing..."
-                  : paymentMethod === 'paypal'
-                  ? "Pay with PayPal"
-                  : paymentMethod === 'stripe'
-                  ? "Pay with Card"
-                  : "Select a Payment Method"}
-              </Button>
-            </div>
-          </form>
+            {/* Bottom buttons */}
+            {paymentMethod === 'paypal' && (
+              <div className="flex gap-4 mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setStep("details")}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={() => document.getElementById("paypal-submit-btn").click()}
+                  className="flex-1 bg-eco hover:bg-eco-dark"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? "Processing..." : "Pay with PayPal"}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Order Summary */}
       <div className="lg:col-span-1">
         <OrderSummary
           cartItems={cartItems}
@@ -765,6 +837,7 @@ const PaymentForm = ({
     </div>
   );
 };
+
 
 const OrderSummary = ({
   cartItems,

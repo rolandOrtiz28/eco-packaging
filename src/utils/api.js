@@ -368,17 +368,20 @@ export const createStripePaymentIntent = async (userId, orderData) => {
   }
 };
 
-export const completeStripeOrder = async (userId, paymentIntentId, orderData) => {
+export const completeStripeOrder = async (userId, paymentId, orderData) => {
   try {
-    const response = await api.post('/api/order/stripe/complete', { userId, paymentIntentId, ...orderData });
-    return response.data;
-  } catch (error) {
-    console.error('Error completing Stripe order:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
+    const response = await api.post('/api/order/stripe/complete', {
+      userId,
+      paymentId, // Ensure paymentId is included
+      items: orderData.items,
+      total: orderData.total,
+      discount: orderData.discount,
+      paymentMethod: 'stripe',
     });
-    throw error;
+    return response.data;
+  } catch (err) {
+    console.error('API Error:', err);
+    throw err.response?.data?.error || err.message;
   }
 };
 
