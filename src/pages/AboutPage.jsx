@@ -363,43 +363,51 @@ const AboutPage = () => {
 
       {/* Moreover (Sustainability) Section */}
       <section className="section-padding bg-white">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="relative h-[450px]">
-              <img
-                ref={boostImageRef}
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476197/bagstoryCustom/Image_20250412215022_wpvlmg.jpg"
-                alt="Sustainability 1"
-                className="absolute top-0 left-0 rounded-lg shadow-md w-[60%] h-[60%] object-cover z-10"
-              />
-              <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476179/bagstoryCustom/Image_20250412214828_cqzixl.jpg"
-                alt="Sustainability 2"
-                className="absolute top-0 right-0 rounded-lg shadow-md w-[45%] h-[40%] object-cover z-20 transform translate-x-[-20%]"
-              />
-              <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476179/bagstoryCustom/Image_20250412214828_cqzixl.jpg"
-                alt="Sustainability 3"
-                className="absolute bottom-0 left-0 rounded-lg shadow-md w-[40%] h-[40%] object-cover z-30 transform translate-y-[-20%]"
-              />
-              <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476706/bagstoryCustom/Screenshot_13_q4pavh.png"
-                alt="Sustainability 4"
-                className="absolute bottom-4 right-20 rounded-lg shadow-md w-[50%] h-[35%] object-cover z-40 transform translate-x-[20%] translate-y-[-10%]"
-              />
-            </div>
-            <div ref={boostTextRef}>
-              <h3 className="text-2xl font-semibold mb-4">Moreover,</h3>
-              <p className="text-gray-700 mb-6">
-                Our commitment to sustainability is demonstrated through our recycling program, which collects and reuses discarded materials, transforming them into PP pellets that are reintroduced into our production process.
-              </p>
-              <p className="text-gray-700 mb-8">
-                By embracing this circular economy model, we have successfully reduced waste, minimized environmental impact, and lowered production costs. This enables us to offer high-quality products to our customers at the most competitive prices, while contributing to a more sustainable future.
-              </p>
-            </div>
-          </div>
+  <div className="container-custom">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="grid grid-cols-2 gap-4 h-[450px]">
+        <div className="relative group">
+          <img
+            ref={boostImageRef}
+            src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476197/bagstoryCustom/Image_20250412215022_wpvlmg.jpg"
+            alt="Sustainability 1"
+            className="rounded-lg shadow-md w-full h-[250px] object-cover transition-transform duration-300"
+          />
         </div>
-      </section>
+        <div className="relative group mt-auto">
+          <img
+            src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476179/bagstoryCustom/Image_20250412214828_cqzixl.jpg"
+            alt="Sustainability 2"
+            className="rounded-lg shadow-md w-full h-[180px] object-cover transition-transform duration-300"
+          />
+        </div>
+        <div className="relative group">
+          <img
+            src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476706/bagstoryCustom/Screenshot_13_q4pavh.png"
+            alt="Sustainability 3"
+            className="rounded-lg shadow-md w-full h-[180px] object-cover transition-transform duration-300"
+          />
+        </div>
+        <div className="relative group">
+          <img
+            src="https://res.cloudinary.com/rolandortiz/image/upload/v1744476706/bagstoryCustom/Screenshot_13_q4pavh.png"
+            alt="Sustainability 4"
+            className="rounded-lg shadow-md w-full h-[250px] object-cover transition-transform duration-300"
+          />
+        </div>
+      </div>
+      <div ref={boostTextRef}>
+        <h3 className="text-2xl font-semibold mb-4">Moreover,</h3>
+        <p className="text-gray-700 mb-6">
+          Our commitment to sustainability is demonstrated through our recycling program, which collects and reuses discarded materials, transforming them into PP pellets that are reintroduced into our production process.
+        </p>
+        <p className="text-gray-700 mb-8">
+          By embracing this circular economy model, we have successfully reduced waste, minimized environmental impact, and lowered production costs. This enables us to offer high-quality products to our customers at the most competitive prices, while contributing to a more sustainable future.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* Comprehensive Warehouse Section */}
       <section className="section-padding bg-eco-paper">
@@ -464,29 +472,34 @@ const AboutPage = () => {
             </p>
             <div className="flex flex-wrap justify-center gap-4 mb-6">
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744109498/BagStory/eco-packaging-castro-600x600_z3ifcd.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744601429/bagstoryCustom/8_zncqyj.png"
                 alt="Product 1"
                 className="rounded-lg shadow-md w-32 h-40 object-contain"
               />
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744109497/BagStory/eco-packaging-midyson-600x600_zlf88c.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744601429/bagstoryCustom/6_wkqfds.png"
                 alt="Product 2"
-                className="rounded-lg shadow-md w-32 h-40 object-contain"
+                className="rounded-lg shadow-md w-40 h-50 object-contain"
               />
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744109495/BagStory/eco-packaging-cocacola-600x600_ddyzgq.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744601429/bagstoryCustom/7_ymm068.png"
                 alt="Product 3"
-                className="rounded-lg shadow-md w-32 h-40 object-contain"
+                className="rounded-lg shadow-md w-40 h-50 object-contain"
               />
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744109495/BagStory/eco-packaging-jewelosco-600x600_a4qkwx.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744601429/bagstoryCustom/5_kmyfqc.png"
                 alt="Product 4"
-                className="rounded-lg shadow-md w-32 h-40 object-contain"
+                className="rounded-lg shadow-md w-40 h-50 object-contain"
               />
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744109495/BagStory/eco-packaging-BC-600x600_zchkdm.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744601429/bagstoryCustom/3_q6vfd1.png"
                 alt="Product 5"
-                className="rounded-lg shadow-md w-32 h-40 object-contain"
+                className="rounded-lg shadow-md w-40 h-50 object-contain"
+              />
+              <img
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744601428/bagstoryCustom/4_a4xbyy.png"
+                alt="Product 5"
+                className="rounded-lg shadow-md w-40 h-50 object-contain"
               />
             </div>
           </div>
@@ -517,16 +530,16 @@ const AboutPage = () => {
       </section>
 
       {/* Strategic Partnerships Section */}
-      <section className="section-padding bg-white">
+      <section className="section-padding bg-eco-paper">
         <div className="container-custom">
           <div className="flex flex-wrap justify-center gap-4 mb-6">
             <img
-              src="https://res.cloudinary.com/rolandortiz/image/upload/v1744477239/bagstoryCustom/Screenshot_16_y2tcil.png"
+              src="https://res.cloudinary.com/rolandortiz/image/upload/v1744600012/bagstoryCustom/%E4%BC%98%E5%8A%BF4_%E8%B4%A7%E6%9F%9C%E5%9B%BE4_tvors3.jpg"
               alt="Shipping Container 1"
               className="rounded-lg shadow-md w-full max-w-sm h-48 object-cover"
             />
             <img
-              src="https://res.cloudinary.com/rolandortiz/image/upload/v1744477238/bagstoryCustom/Screenshot_15_wfhuf9.png"
+              src="https://res.cloudinary.com/rolandortiz/image/upload/v1744600018/bagstoryCustom/%E4%BC%98%E5%8A%BF2_%E7%BE%8E%E5%9B%BD%E9%80%81%E8%B4%A7%E8%B4%A7%E8%BD%A6%E5%9B%BE1_fbnpx9.jpg"
               alt="Shipping Container 2"
               className="rounded-lg shadow-md w-full max-w-sm h-48 object-cover"
             />
@@ -547,7 +560,7 @@ const AboutPage = () => {
             </p>
             <div className="flex justify-center mb-6">
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744477296/bagstoryCustom/Screenshot_17_jcene8.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744600013/bagstoryCustom/%E4%BC%98%E5%8A%BF4_%E8%B4%A7%E6%9F%9C%E5%9B%BE3_pa6hff.jpg"
                 alt="Shipping Container 3"
                 className="rounded-lg shadow-md w-full max-w-2xl h-auto object-cover"
               />
@@ -583,7 +596,7 @@ const AboutPage = () => {
             </div>
             <div className="flex justify-center mb-6">
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744477335/bagstoryCustom/Screenshot_15_csqxb1.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744600012/bagstoryCustom/%E4%BC%98%E5%8A%BF4_%E8%B4%A7%E6%9F%9C%E5%9B%BE1_eymspp.jpg"
                 alt="Shipping Container 4"
                 className="rounded-lg shadow-md w-full max-w-2xl h-auto object-cover"
               />
@@ -593,11 +606,11 @@ const AboutPage = () => {
       </section>
 
       {/* Expert Team Section */}
-      <section className="section-padding bg-eco-paper">
+      <section className="section-padding bg-white">
         <div className="container-custom">
           <div className="mb-6">
             <img
-              src="https://res.cloudinary.com/rolandortiz/image/upload/v1744477384/bagstoryCustom/Screenshot_19_uoyuwh.png"
+              src="https://res.cloudinary.com/rolandortiz/image/upload/v1744599917/bagstoryCustom/%E4%BC%98%E5%8A%BF5_%E6%B8%85%E5%85%B3%E6%95%88%E6%9E%9C%E5%9B%BE1_a9paqh.jpg"
               alt="Customs Clearance Banner"
               className="w-full h-64 object-cover rounded-lg shadow-md"
             />
@@ -612,7 +625,7 @@ const AboutPage = () => {
             </p>
             <div className="flex justify-center mb-6">
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744477624/bagstoryCustom/14_ytrqi6.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744599917/bagstoryCustom/%E4%BC%98%E5%8A%BF5_%E6%B8%85%E5%85%B3%E6%95%88%E6%9E%9C%E5%9B%BE2_if5msq.jpg"
                 alt="Shipping Port 2"
                 className="rounded-lg shadow-md w-full max-w-4xl h-auto object-cover"
               />
@@ -625,7 +638,7 @@ const AboutPage = () => {
             </p>
             <div className="flex justify-center mb-6">
               <img
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744477627/bagstoryCustom/15_qtaifn.png"
+                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744599545/bagstoryCustom/Untitled_design_9_vgy2m7.png"
                 alt="Logistics Team"
                 className="rounded-lg shadow-md w-full max-w-4xl h-auto object-cover"
               />
@@ -638,7 +651,7 @@ const AboutPage = () => {
       <section className="section-padding bg-eco-paper">
         <div className="container-custom">
           <div ref={welcomeHeaderRef} className="text-center mb-12">
-            <h6 className="text-eco font-medium mb-2">WELCOME TO BAGSTORY</h6>
+          
             <h2 className="text-3xl font-bold mb-3">Unveil Your Style, Embrace Sustainability!</h2>
             <p className="text-gray-700 max-w-2xl mx-auto">
               Discover our eco-friendly non-woven bags—perfect for your business, events, or daily use!

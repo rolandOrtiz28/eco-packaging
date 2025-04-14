@@ -32,16 +32,13 @@ const CheckoutPage = () => {
     const savedStep = localStorage.getItem("checkoutStep");
     return savedStep || "details";
   });
-  useEffect(() => {
-    console.log("Current step:", step);
-  }, [step]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [settings, setSettings] = useState({
     taxRate: 0.08,
     deliveryFee: 9.99,
     freeDeliveryThreshold: 50,
   });
-
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -52,23 +49,28 @@ const CheckoutPage = () => {
   const [zipCode, setZipCode] = useState("");
   const [country, setCountry] = useState("US");
   const [saveInfo, setSaveInfo] = useState(false);
-
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
+
+  useEffect(() => {
+    console.log("Current step:", step);
+  }, [step]);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const response = await api.get('/api/settings');
         setSettings({
-          taxRate: response.data.taxRate || 0.08,
-          deliveryFee: response.data.deliveryFee || 9.99,
-          freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
+          taxRate: response.data.taxRate?.value || 0.08,
+          deliveryFee: response.data.deliveryFee?.value || 9.99,
+          freeDeliveryThreshold: response.data.freeDeliveryThreshold?.value || 50,
         });
       } catch (err) {
         console.error("Error fetching settings:", err);
         toast.error("Failed to fetch tax and delivery settings");
+      } finally {
+        setIsLoadingSettings(false);
       }
     };
     fetchSettings();
@@ -146,7 +148,6 @@ const CheckoutPage = () => {
   
     initStripeIntent();
   }, [paymentMethod]);
-  
 
   const getPricePerCase = (item) => {
     const quantity = item.quantity;
@@ -162,9 +163,58 @@ const CheckoutPage = () => {
     (total, item) => total + getPricePerCase(item) * item.quantity,
     0
   );
+
+  // Map for user-friendly fee display names
+  const feeDisplayNames = {
+    creditCardPaypalSurcharge: "Credit Card/PayPal Surcharge",
+    taxRate: "Tax",
+    deliveryFee: "Delivery Fee",
+    freeDeliveryThreshold: "Free Delivery Threshold",
+    discountRate: "Discount",
+  };
+
+  // Dynamically calculate fees
+  const calculatedFees = Object.keys(settings).reduce((acc, key) => {
+    const fee = settings[key];
+    let feeAmount = 0;
+
+    // Skip freeDeliveryThreshold as it's not a direct fee
+    if (key === 'freeDeliveryThreshold') return acc;
+
+    // Apply creditCardPaypalSurcharge for both Stripe and PayPal
+    if (key === 'creditCardPaypalSurcharge' && !paymentMethod) {
+      return acc; // Skip until payment method is selected
+    }
+
+    // Exempt wholesale customers from tax
+    if (key === 'taxRate' && user?.role === 'wholesale') {
+      return acc; // Skip tax for wholesale customers
+    }
+
+    if (settings[key].type === 'flat') {
+      feeAmount = fee;
+    } else if (settings[key].type === 'percentage') {
+      feeAmount = (fee / 100) * subtotal;
+    }
+    return { ...acc, [key]: feeAmount };
+  }, {});
+
+  // Apply free delivery threshold logic
   const shipping = subtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
-  const tax = subtotal * settings.taxRate;
-  const total = subtotal + shipping + tax - discount;
+
+  // Sum all fees except discounts
+  const totalFees = Object.keys(calculatedFees).reduce((sum, key) => {
+    if (key.includes('discount')) return sum;
+    return sum + calculatedFees[key];
+  }, 0);
+
+  // Apply discounts
+  const totalDiscount = Object.keys(calculatedFees).reduce((sum, key) => {
+    if (key.includes('discount')) return sum + calculatedFees[key];
+    return sum;
+  }, discount);
+
+  const total = subtotal + totalFees - totalDiscount;
 
   const validateDetails = () => {
     if (!firstName || !lastName || !email || !phone || !address || !city || !state || !zipCode) {
@@ -234,6 +284,10 @@ const CheckoutPage = () => {
         })),
         total,
         discount,
+        fees: calculatedFees,
+        shipping,
+        subtotal,
+        paymentMethod,
       };
 
       if (paymentMethod === 'paypal') {
@@ -276,6 +330,10 @@ const CheckoutPage = () => {
         })),
         total,
         discount,
+        fees: calculatedFees,
+        shipping,
+        subtotal,
+        paymentMethod: 'paypal',
       };
 
       if (!user || !user.id) {
@@ -285,11 +343,17 @@ const CheckoutPage = () => {
       const orderResult = await completeOrder(user.id, token, captureData.paymentId, orderData, 'paypal');
       console.log("PayPal order completed:", orderResult);
 
+      // Save receipt and send email
+      await api.post('/api/receipts', {
+        userId: user.id,
+        orderId: orderResult.orderId,
+        receipt: generateReceipt(orderData, orderResult.orderId),
+      });
+
       clearCart();
       console.log("Cart cleared after PayPal payment");
       setStep("confirmation");
       window.scrollTo(0, 0);
-      navigate('/checkout', { replace: true });
     } catch (err) {
       console.error("PayPal payment capture failed:", err);
       toast.error(err.message || "Payment capture failed. Please try again.");
@@ -297,6 +361,25 @@ const CheckoutPage = () => {
       setIsProcessing(false);
       setPaymentInitiated(false);
     }
+  };
+
+  const generateReceipt = (orderData, orderId) => {
+    return `
+      Order Receipt
+      Order ID: ${orderId}
+      Date: ${new Date().toISOString().split('T')[0]}
+      Customer: ${user.name} (${user.email})
+      Payment Method: ${orderData.paymentMethod}
+
+      Items:
+      ${orderData.items.map(item => `${item.name} - ${item.quantity} case(s) - $${(item.price * item.quantity).toFixed(2)}`).join('\n')}
+
+      Subtotal: $${orderData.subtotal.toFixed(2)}
+      ${Object.keys(orderData.fees).map(key => `${feeDisplayNames[key] || key}: $${orderData.fees[key].toFixed(2)}`).join('\n')}
+      Shipping: $${orderData.shipping.toFixed(2)}
+      Total Discount: $${orderData.discount.toFixed(2)}
+      Total: $${orderData.total.toFixed(2)}
+    `;
   };
 
   const handleBackToShopping = () => {
@@ -315,6 +398,10 @@ const CheckoutPage = () => {
   if (cartItems.length === 0 && step !== "confirmation") {
     navigate("/");
     return null;
+  }
+
+  if (isLoadingSettings) {
+    return <div>Loading checkout...</div>;
   }
 
   return (
@@ -514,9 +601,10 @@ const CheckoutPage = () => {
                 cartItems={cartItems}
                 subtotal={subtotal}
                 shipping={shipping}
-                tax={tax}
                 total={total}
-                discount={discount}
+                discount={totalDiscount}
+                calculatedFees={calculatedFees} 
+                feeDisplayNames={feeDisplayNames}
               />
             </div>
           </div>
@@ -533,14 +621,16 @@ const CheckoutPage = () => {
             cartItems={cartItems}
             subtotal={subtotal}
             shipping={shipping}
-            tax={tax}
             total={total}
-            discount={discount}
+            discount={totalDiscount}
             user={user}
             setStep={setStep}
             clearCart={clearCart}
             navigate={navigate}
             stripePromise={stripePromise}
+            settings={settings}
+            calculatedFees={calculatedFees}
+            feeDisplayNames={feeDisplayNames} // Added prop
           />
         )}
 
@@ -599,7 +689,7 @@ const StripePaymentForm = ({
       return;
     }
 
-    // Ensure the UI updates immediately by setting isProcessing
+    console.log("Setting isProcessing to true");
     setIsProcessing(true);
 
     try {
@@ -639,6 +729,13 @@ const StripePaymentForm = ({
         const result = await completeStripeOrder(user.id, paymentIntent.id, orderData);
         console.log("Stripe order completed:", result);
 
+        // Save receipt and send email
+        await api.post('/api/receipts', {
+          userId: user.id,
+          orderId: result.orderId,
+          receipt: generateReceipt(orderData, result.orderId),
+        });
+
         localStorage.removeItem('stripePaymentIntentId');
         clearCart();
         setStep("confirmation");
@@ -648,6 +745,7 @@ const StripePaymentForm = ({
       console.error("Stripe error:", err);
       toast.error(err.message || "Payment failed");
     } finally {
+      console.log("Setting isProcessing to false");
       setIsProcessing(false);
     }
   };
@@ -670,7 +768,7 @@ const StripePaymentForm = ({
           onChange={(e) => setIsCardComplete(e.complete)}
         />
       </div>
-      <div className="flex gap-4 mt-6 relative">
+      <div className="flex gap-4 mt-6">
         <Button
           type="submit"
           className="flex-1 bg-eco hover:bg-eco-dark flex items-center justify-center"
@@ -704,36 +802,10 @@ const StripePaymentForm = ({
             "Pay with Card"
           )}
         </Button>
-        {isProcessing && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50 rounded">
-            <svg
-              className="animate-spin h-8 w-8 text-eco"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-          </div>
-        )}
       </div>
     </form>
   );
 };
-
-
 
 const PaymentForm = ({
   paymentMethod,
@@ -744,7 +816,6 @@ const PaymentForm = ({
   cartItems,
   subtotal,
   shipping,
-  tax,
   total,
   discount,
   user,
@@ -752,6 +823,9 @@ const PaymentForm = ({
   clearCart,
   navigate,
   stripePromise,
+  settings,
+  calculatedFees,
+  feeDisplayNames, // Added prop
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -766,11 +840,35 @@ const PaymentForm = ({
               <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                 <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
                   <RadioGroupItem value="paypal" id="payment-paypal" />
-                  <Label htmlFor="payment-paypal">PayPal</Label>
+                  <Label htmlFor="payment-paypal" className="flex items-center">
+                    <img
+                      src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg"
+                      alt="PayPal Logo"
+                      className="h-6 w-auto mr-2"
+                    />
+                    PayPal
+                    {settings.creditCardPaypalSurcharge && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ({settings.creditCardPaypalSurcharge}% surcharge applies)
+                      </span>
+                    )}
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
                   <RadioGroupItem value="stripe" id="payment-stripe" />
-                  <Label htmlFor="payment-stripe">Credit/Debit Card</Label>
+                  <Label htmlFor="payment-stripe" className="flex items-center">
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png"
+                      alt="Credit Card Logo"
+                      className="h-6 w-auto mr-2"
+                    />
+                    Credit/Debit Card
+                    {settings.creditCardPaypalSurcharge && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ({settings.creditCardPaypalSurcharge}% surcharge applies)
+                      </span>
+                    )}
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
@@ -795,6 +893,7 @@ const PaymentForm = ({
                   clearCart={clearCart}
                   navigate={navigate}
                   setIsProcessing={setIsProcessing}
+                  isProcessing={isProcessing}
                 />
               </Elements>
             )}
@@ -823,29 +922,29 @@ const PaymentForm = ({
         </div>
       </div>
 
-      {/* Order Summary */}
       <div className="lg:col-span-1">
         <OrderSummary
           cartItems={cartItems}
           subtotal={subtotal}
           shipping={shipping}
-          tax={tax}
           total={total}
           discount={discount}
+          calculatedFees={calculatedFees}
+          feeDisplayNames={feeDisplayNames}
         />
       </div>
     </div>
   );
 };
 
-
 const OrderSummary = ({
   cartItems,
   subtotal,
   shipping,
-  tax,
   total,
   discount,
+  calculatedFees,
+  feeDisplayNames,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden sticky top-24">
@@ -886,20 +985,21 @@ const OrderSummary = ({
             <span className="text-muted-foreground">Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Discount</span>
-            <span>-${discount.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Shipping</span>
-            <span>
-              {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Estimated Tax</span>
-            <span>${tax.toFixed(2)}</span>
-          </div>
+          {Object.keys(calculatedFees).map(key => (
+            key.includes('discount') ? (
+              <div key={key} className="flex justify-between">
+                <span className="text-muted-foreground">{feeDisplayNames[key] || key} (Discount)</span>
+                <span>-${calculatedFees[key].toFixed(2)}</span>
+              </div>
+            ) : (
+              <div key={key} className="flex justify-between">
+                <span className="text-muted-foreground">{feeDisplayNames[key] || key}</span>
+                <span>
+                  {key === 'deliveryFee' && shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
+                </span>
+              </div>
+            )
+          ))}
           <div className="border-t pt-3 mt-3">
             <div className="flex justify-between font-semibold">
               <span>Total</span>

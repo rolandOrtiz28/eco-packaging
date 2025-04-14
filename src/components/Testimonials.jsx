@@ -24,7 +24,7 @@ const testimonials = [
 
 const Testimonials = () => {
   return (
-    <section className="section-padding bg-eco-paper">
+    <section className="section-padding bg-white">
       <div className="container-custom">
         <div className="text-center mb-12">
           <h6 className="text-eco font-medium mb-2">TESTIMONIALS</h6>

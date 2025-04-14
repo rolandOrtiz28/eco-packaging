@@ -25,9 +25,9 @@ const CartPage = () => {
       try {
         const response = await api.get('/api/settings');
         setSettings({
-          taxRate: response.data.taxRate || 0.08,
-          deliveryFee: response.data.deliveryFee || 9.99,
-          freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
+          taxRate: response.data.taxRate?.value || 0.08,
+          deliveryFee: response.data.deliveryFee?.value || 9.99,
+          freeDeliveryThreshold: response.data.freeDeliveryThreshold?.value || 50,
         });
       } catch (err) {
         console.error("Error fetching settings:", err);
