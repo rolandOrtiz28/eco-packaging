@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { api } from "@/utils/api";
+import { calculateFees } from "@/utils/calculateFees";
 
 function SidebarCart() {
   const [open, setOpen] = useState(false);
@@ -20,10 +21,10 @@ function SidebarCart() {
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [settings, setSettings] = useState({
-    taxRate: 0.08,
-    deliveryFee: 9.99,
-    freeDeliveryThreshold: 50,
-    surCharge: 0,
+    taxRate: { value: 0 },
+    deliveryFee: { type: 'flat', value: 0 },
+    freeDeliveryThreshold: { type: 'flat', value: 0 },
+    surCharge: { type: 'flat', value: 0 },
   });
 
   const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -35,10 +36,21 @@ function SidebarCart() {
         const response = await api.get('/api/settings');
         console.log('SidebarCart - Fetched settings from API:', response.data);
         const updatedSettings = {
-          taxRate: (response.data.taxRate !== undefined && response.data.taxRate !== null && !isNaN(parseFloat(response.data.taxRate))) ? parseFloat(response.data.taxRate) : 0.08,
-          deliveryFee: (response.data.deliveryFee !== undefined && response.data.deliveryFee !== null && !isNaN(parseFloat(response.data.deliveryFee))) ? parseFloat(response.data.deliveryFee) : 9.99,
-          freeDeliveryThreshold: (response.data.freeDeliveryThreshold !== undefined && response.data.freeDeliveryThreshold !== null && !isNaN(parseFloat(response.data.freeDeliveryThreshold))) ? parseFloat(response.data.freeDeliveryThreshold) : 50,
-          surCharge: (response.data.surCharge !== undefined && response.data.surCharge !== null && !isNaN(parseFloat(response.data.surCharge))) ? parseFloat(response.data.surCharge) : 0,
+          taxRate: {
+            value: (response.data.taxRate?.value !== undefined && !isNaN(parseFloat(response.data.taxRate.value))) ? parseFloat(response.data.taxRate.value) : 0,
+          },
+          deliveryFee: {
+            type: response.data.deliveryFee?.type || 'flat',
+            value: (response.data.deliveryFee?.value !== undefined && !isNaN(parseFloat(response.data.deliveryFee.value))) ? parseFloat(response.data.deliveryFee.value) : 0,
+          },
+          freeDeliveryThreshold: {
+            type: response.data.freeDeliveryThreshold?.type || 'flat',
+            value: (response.data.freeDeliveryThreshold?.value !== undefined && !isNaN(parseFloat(response.data.freeDeliveryThreshold.value))) ? parseFloat(response.data.freeDeliveryThreshold.value) : 0,
+          },
+          surCharge: {
+            type: response.data.surCharge?.type || 'flat',
+            value: (response.data.surCharge?.value !== undefined && !isNaN(parseFloat(response.data.surCharge.value))) ? parseFloat(response.data.surCharge.value) : 0,
+          },
         };
         console.log('SidebarCart - Updated settings state:', updatedSettings);
         setSettings(updatedSettings);
@@ -52,26 +64,43 @@ function SidebarCart() {
 
   const getPricePerCase = (item) => {
     const quantity = item.quantity || 1;
-    const unitsPerCase = parseInt(item.pcsPerCase) || 0;
-
+    const unitsPerCase = item.pcsPerCase;
     let pricePerUnit = parseFloat(item.price) || 0;
+    console.log('SidebarCart - getPricePerCase - Item:', {
+      itemId: item.id,
+      name: item.name,
+      price: item.price,
+      quantity,
+      bulkPrice: item.bulkPrice,
+      pcsPerCase: item.pcsPerCase,
+      pricePerUnit,
+    });
     if (quantity >= 6 && quantity <= 50) {
       pricePerUnit = parseFloat(item.bulkPrice) || pricePerUnit;
+      console.log('SidebarCart - Applied bulkPrice:', pricePerUnit);
     }
-
-    return pricePerUnit * unitsPerCase;
+    const pricePerCase = pricePerUnit * unitsPerCase;
+    console.log('SidebarCart - getPricePerCase - Returned pricePerCase:', pricePerCase);
+    return pricePerCase;
   };
 
+  console.log('SidebarCart - Cart items:', cartItems);
   const subtotal = cartItems.reduce((total, item) => {
-    const price = getPricePerCase(item);
-    const qty = item.quantity !== undefined ? item.quantity : 1;
-    return total + (isNaN(price) ? 0 : price) * qty;
+    const pricePerCase = getPricePerCase(item);
+    const itemTotal = pricePerCase * (item.quantity || 1);
+    console.log('SidebarCart - Subtotal calculation for item:', {
+      itemId: item.id,
+      name: item.name,
+      pricePerCase,
+      quantity: item.quantity,
+      itemTotal,
+    });
+    return total + itemTotal;
   }, 0);
+  console.log('SidebarCart - Calculated subtotal:', subtotal);
 
-  const shipping = subtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
-  const tax = subtotal * settings.taxRate;
-  const surCharge = settings.surCharge;
-  const total = subtotal + shipping + tax + surCharge - discount;
+  const { shipping, tax, surCharge, total } = calculateFees(subtotal, settings, discount);
+  console.log('SidebarCart - Fee calculation:', { shipping, tax, surCharge, total });
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -82,7 +111,7 @@ function SidebarCart() {
       if (isNaN(subtotal) || subtotal <= 0) {
         throw new Error("Cannot apply promo code: Cart subtotal is invalid or zero.");
       }
-      const response = await api.post('/promo/apply', { code: couponCode, subtotal });
+      const response = await api.post('/api/promo/apply', { code: couponCode, subtotal });
       applyDiscount(response.data.discount);
       toast.success(`Promo code applied! You saved $${response.data.discount}`);
     } catch (err) {

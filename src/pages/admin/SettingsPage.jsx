@@ -5,16 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getSettings } from "@/utils/api";
 
 const SettingsPage = () => {
   const { isAdmin } = useAuth();
   const [settings, setSettings] = useState({
-    taxRate: 0.08,
-    deliveryFee: 9.99,
-    freeDeliveryThreshold: 50,
-    surCharge: 0, // Add surCharge with a default of 0
+    taxRate: { value: 0.08 },
+    deliveryFee: { type: 'flat', value: 9.99 },
+    freeDeliveryThreshold: { type: 'flat', value: 50 },
+    surCharge: { type: 'flat', value: 0 },
   });
 
   useEffect(() => {
@@ -27,10 +28,21 @@ const SettingsPage = () => {
       const data = await getSettings();
       console.log('Fetched settings from API:', data);
       const updatedSettings = {
-        taxRate: (data.taxRate !== undefined && data.taxRate !== null && !isNaN(parseFloat(data.taxRate))) ? parseFloat(data.taxRate) : 0.08,
-        deliveryFee: (data.deliveryFee !== undefined && data.deliveryFee !== null && !isNaN(parseFloat(data.deliveryFee))) ? parseFloat(data.deliveryFee) : 9.99,
-        freeDeliveryThreshold: (data.freeDeliveryThreshold !== undefined && data.freeDeliveryThreshold !== null && !isNaN(parseFloat(data.freeDeliveryThreshold))) ? parseFloat(data.freeDeliveryThreshold) : 50,
-        surCharge: (data.surCharge !== undefined && data.surCharge !== null && !isNaN(parseFloat(data.surCharge))) ? parseFloat(data.surCharge) : 0,
+        taxRate: {
+          value: (data.taxRate?.value !== undefined && !isNaN(parseFloat(data.taxRate.value))) ? parseFloat(data.taxRate.value) : 0.08,
+        },
+        deliveryFee: {
+          type: data.deliveryFee?.type || 'flat',
+          value: (data.deliveryFee?.value !== undefined && !isNaN(parseFloat(data.deliveryFee.value))) ? parseFloat(data.deliveryFee.value) : 9.99,
+        },
+        freeDeliveryThreshold: {
+          type: data.freeDeliveryThreshold?.type || 'flat',
+          value: (data.freeDeliveryThreshold?.value !== undefined && !isNaN(parseFloat(data.freeDeliveryThreshold.value))) ? parseFloat(data.freeDeliveryThreshold.value) : 50,
+        },
+        surCharge: {
+          type: data.surCharge?.type || 'flat',
+          value: (data.surCharge?.value !== undefined && !isNaN(parseFloat(data.surCharge.value))) ? parseFloat(data.surCharge.value) : 0,
+        },
       };
       console.log('Updated settings state:', updatedSettings);
       setSettings(updatedSettings);
@@ -40,22 +52,45 @@ const SettingsPage = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setSettings(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+  const handleInputChange = (key, field, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        [field]: field === 'value' ? (value === '' ? '' : parseFloat(value)) : value,
+      },
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const formattedSettings = {
+        taxRate: {
+          value: settings.taxRate.value === '' || isNaN(settings.taxRate.value) ? 0 : settings.taxRate.value,
+        },
+        deliveryFee: {
+          type: settings.deliveryFee.type,
+          value: settings.deliveryFee.value === '' || isNaN(settings.deliveryFee.value) ? 0 : settings.deliveryFee.value,
+        },
+        freeDeliveryThreshold: {
+          type: settings.freeDeliveryThreshold.type,
+          value: settings.freeDeliveryThreshold.value === '' || isNaN(settings.freeDeliveryThreshold.value) ? 0 : settings.freeDeliveryThreshold.value,
+        },
+        surCharge: {
+          type: settings.surCharge.type,
+          value: settings.surCharge.value === '' || isNaN(settings.surCharge.value) ? 0 : settings.surCharge.value,
+        },
+      };
+
       await Promise.all([
-        api.post('/api/settings', { key: 'taxRate', value: settings.taxRate }),
-        api.post('/api/settings', { key: 'deliveryFee', value: settings.deliveryFee }),
-        api.post('/api/settings', { key: 'freeDeliveryThreshold', value: settings.freeDeliveryThreshold }),
-        api.post('/api/settings', { key: 'surCharge', value: settings.surCharge }),
+        api.post('/api/settings', { key: 'taxRate', value: { value: formattedSettings.taxRate.value } }),
+        api.post('/api/settings', { key: 'deliveryFee', value: formattedSettings.deliveryFee }),
+        api.post('/api/settings', { key: 'freeDeliveryThreshold', value: formattedSettings.freeDeliveryThreshold }),
+        api.post('/api/settings', { key: 'surCharge', value: formattedSettings.surCharge }),
       ]);
       toast.success("Settings updated successfully");
-      await fetchSettings(); // Refresh settings after update
+      await fetchSettings();
     } catch (err) {
       console.error("Error updating settings:", err);
       toast.error(err.message || "Failed to update settings");
@@ -77,58 +112,93 @@ const SettingsPage = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="taxRate" className="text-sm text-eco-dark">Tax Rate (%)</Label>
             <Input
               id="taxRate"
-              name="taxRate"
               type="number"
               step="0.01"
-              value={isNaN(settings.taxRate) ? 0 : settings.taxRate * 100}
-              onChange={(e) => setSettings(prev => ({ ...prev, taxRate: parseFloat(e.target.value) / 100 || 0 }))}
+              value={settings.taxRate.value === '' ? '' : isNaN(settings.taxRate.value) ? 0 : settings.taxRate.value * 100}
+              onChange={(e) => handleInputChange('taxRate', 'value', e.target.value === '' ? '' : parseFloat(e.target.value) / 100)}
               required
               className="h-8 text-sm border-eco-light"
             />
           </div>
           <div>
-            <Label htmlFor="deliveryFee" className="text-sm text-eco-dark">Delivery Fee ($ per order)</Label>
-            <Input
-              id="deliveryFee"
-              name="deliveryFee"
-              type="number"
-              step="0.01"
-              value={isNaN(settings.deliveryFee) ? 0 : settings.deliveryFee}
-              onChange={handleInputChange}
-              required
-              className="h-8 text-sm border-eco-light"
-            />
+            <Label className="text-sm text-eco-dark">Delivery Fee</Label>
+            <div className="flex gap-2">
+              <Select
+                value={settings.deliveryFee.type}
+                onValueChange={(value) => handleInputChange('deliveryFee', 'type', value)}
+              >
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat ($)</SelectItem>
+                  <SelectItem value="percentage">Percentage (%)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                step="0.01"
+                value={settings.deliveryFee.value === '' ? '' : settings.deliveryFee.type === 'percentage' ? settings.deliveryFee.value : settings.deliveryFee.value}
+                onChange={(e) => handleInputChange('deliveryFee', 'value', e.target.value)}
+                required
+                className="h-8 text-sm border-eco-light"
+              />
+            </div>
           </div>
           <div>
-            <Label htmlFor="freeDeliveryThreshold" className="text-sm text-eco-dark">Free Delivery Threshold ($)</Label>
-            <Input
-              id="freeDeliveryThreshold"
-              name="freeDeliveryThreshold"
-              type="number"
-              step="0.01"
-              value={isNaN(settings.freeDeliveryThreshold) ? 0 : settings.freeDeliveryThreshold}
-              onChange={handleInputChange}
-              required
-              className="h-8 text-sm border-eco-light"
-            />
+            <Label className="text-sm text-eco-dark">Free Delivery Threshold</Label>
+            <div className="flex gap-2">
+              <Select
+                value={settings.freeDeliveryThreshold.type}
+                onValueChange={(value) => handleInputChange('freeDeliveryThreshold', 'type', value)}
+              >
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat ($)</SelectItem>
+                  <SelectItem value="percentage">Percentage (%)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                step="0.01"
+                value={settings.freeDeliveryThreshold.value === '' ? '' : settings.freeDeliveryThreshold.type === 'percentage' ? settings.freeDeliveryThreshold.value : settings.freeDeliveryThreshold.value}
+                onChange={(e) => handleInputChange('freeDeliveryThreshold', 'value', e.target.value)}
+                required
+                className="h-8 text-sm border-eco-light"
+              />
+            </div>
           </div>
           <div>
-            <Label htmlFor="surCharge" className="text-sm text-eco-dark">Surcharge ($ per order)</Label>
-            <Input
-              id="surCharge"
-              name="surCharge"
-              type="number"
-              step="0.01"
-              value={isNaN(settings.surCharge) ? 0 : settings.surCharge}
-              onChange={handleInputChange}
-              required
-              className="h-8 text-sm border-eco-light"
-            />
+            <Label className="text-sm text-eco-dark">Surcharge</Label>
+            <div className="flex gap-2">
+              <Select
+                value={settings.surCharge.type}
+                onValueChange={(value) => handleInputChange('surCharge', 'type', value)}
+              >
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat ($)</SelectItem>
+                  <SelectItem value="percentage">Percentage (%)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                step="0.01"
+                value={settings.surCharge.value === '' ? '' : settings.surCharge.type === 'percentage' ? settings.surCharge.value : settings.surCharge.value}
+                onChange={(e) => handleInputChange('surCharge', 'value', e.target.value)}
+                required
+                className="h-8 text-sm border-eco-light"
+              />
+            </div>
           </div>
           <Button type="submit" className="bg-eco hover:bg-eco-dark text-white h-8 text-sm">
             Save Settings

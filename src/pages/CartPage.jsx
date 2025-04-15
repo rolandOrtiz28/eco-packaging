@@ -7,6 +7,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/utils/api";
 import { toast } from "sonner";
+import { calculateFees } from "@/utils/calculateFees";
 
 const CartPage = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, discount, applyDiscount } = useCart();
@@ -14,10 +15,10 @@ const CartPage = () => {
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [settings, setSettings] = useState({
-    taxRate: 0.08,
-    deliveryFee: 9.99,
-    freeDeliveryThreshold: 50,
-    surCharge: 0,
+    taxRate: { value: 0 },
+    deliveryFee: { type: 'flat', value: 0 },
+    freeDeliveryThreshold: { type: 'flat', value: 0 },
+    surCharge: { type: 'flat', value: 0 },
   });
   const navigate = useNavigate();
 
@@ -27,10 +28,21 @@ const CartPage = () => {
         const response = await api.get('/api/settings');
         console.log('CartPage - Fetched settings from API:', response.data);
         const updatedSettings = {
-          taxRate: (response.data.taxRate !== undefined && response.data.taxRate !== null && !isNaN(parseFloat(response.data.taxRate))) ? parseFloat(response.data.taxRate) : 0.08,
-          deliveryFee: (response.data.deliveryFee !== undefined && response.data.deliveryFee !== null && !isNaN(parseFloat(response.data.deliveryFee))) ? parseFloat(response.data.deliveryFee) : 9.99,
-          freeDeliveryThreshold: (response.data.freeDeliveryThreshold !== undefined && response.data.freeDeliveryThreshold !== null && !isNaN(parseFloat(response.data.freeDeliveryThreshold))) ? parseFloat(response.data.freeDeliveryThreshold) : 50,
-          surCharge: (response.data.surCharge !== undefined && response.data.surCharge !== null && !isNaN(parseFloat(response.data.surCharge))) ? parseFloat(response.data.surCharge) : 0,
+          taxRate: {
+            value: (response.data.taxRate?.value !== undefined && !isNaN(parseFloat(response.data.taxRate.value))) ? parseFloat(response.data.taxRate.value) : 0,
+          },
+          deliveryFee: {
+            type: response.data.deliveryFee?.type || 'flat',
+            value: (response.data.deliveryFee?.value !== undefined && !isNaN(parseFloat(response.data.deliveryFee.value))) ? parseFloat(response.data.deliveryFee.value) : 0,
+          },
+          freeDeliveryThreshold: {
+            type: response.data.freeDeliveryThreshold?.type || 'flat',
+            value: (response.data.freeDeliveryThreshold?.value !== undefined && !isNaN(parseFloat(response.data.freeDeliveryThreshold.value))) ? parseFloat(response.data.freeDeliveryThreshold.value) : 0,
+          },
+          surCharge: {
+            type: response.data.surCharge?.type || 'flat',
+            value: (response.data.surCharge?.value !== undefined && !isNaN(parseFloat(response.data.surCharge.value))) ? parseFloat(response.data.surCharge.value) : 0,
+          },
         };
         console.log('CartPage - Updated settings state:', updatedSettings);
         setSettings(updatedSettings);
@@ -43,7 +55,7 @@ const CartPage = () => {
   }, []);
 
   const getPricePerCase = (item) => {
-    const quantity = item.quantity || 1; // Default to 1 if undefined
+    const quantity = item.quantity || 1;
     const unitsPerCase = parseInt(item.pcsPerCase) || 0;
 
     let pricePerUnit = parseFloat(item.price) || 0;
@@ -58,15 +70,12 @@ const CartPage = () => {
 
   const subtotal = cartItems.reduce((total, item) => {
     const price = getPricePerCase(item);
-    const qty = item.quantity !== undefined ? item.quantity : 1; // Default to 1 if undefined
+    const qty = item.quantity !== undefined ? item.quantity : 1;
     return total + (isNaN(price) ? 0 : price) * qty;
   }, 0);
   console.log('Subtotal in CartPage:', subtotal);
 
-  const shipping = subtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
-  const tax = subtotal * settings.taxRate;
-  const surCharge = settings.surCharge;
-  const total = subtotal + shipping + tax + surCharge - discount;
+  const { shipping, tax, surCharge, total } = calculateFees(subtotal, settings, discount);
 
   const handleQuantityChange = (id, newQuantity) => {
     updateQuantity(id, newQuantity);
@@ -86,7 +95,7 @@ const CartPage = () => {
       if (isNaN(subtotal) || subtotal <= 0) {
         throw new Error("Cannot apply promo code: Cart subtotal is invalid or zero.");
       }
-      const response = await api.post('/promo/apply', { code: couponCode, subtotal });
+      const response = await api.post('/api/promo/apply', { code: couponCode, subtotal });
       applyDiscount(response.data.discount);
       toast.success(`Promo code applied! You saved $${response.data.discount}`);
     } catch (err) {

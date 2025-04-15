@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api, updateUserProfile, createPaypalOrder, capturePaypalOrder, createStripePaymentIntent, completeStripeOrder, completeOrder } from "@/utils/api";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { calculateFees } from "@/utils/calculateFees";
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe("pk_test_51NBUeuKIAap6PevkXRO1FHavYGMCu5nPcc3GQGeBSHmnzhg6qZjvDwhTYotdKXmiiGypNVcY4YLTNOZ4rcs3s9dy00qgHaIJxR");
@@ -34,10 +35,10 @@ const CheckoutPage = () => {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [settings, setSettings] = useState({
-    taxRate: 0,
-    deliveryFee: 0,
-    freeDeliveryThreshold: 0,
-    surCharge: 0,
+    taxRate: { value: 0 },
+    deliveryFee: { type: 'flat', value: 0 },
+    freeDeliveryThreshold: { type: 'flat', value: 0 },
+    surCharge: { type: 'flat', value: 0 },
   });
 
   const [subtotal, setSubtotal] = useState(0);
@@ -77,10 +78,21 @@ const CheckoutPage = () => {
         const response = await api.get('/api/settings', { cache: 'no-store' });
         console.log('CheckoutPage - Fetched settings from API:', response.data);
         const updatedSettings = {
-          taxRate: (response.data.taxRate !== undefined && response.data.taxRate !== null && !isNaN(parseFloat(response.data.taxRate))) ? parseFloat(response.data.taxRate) : 0,
-          deliveryFee: (response.data.deliveryFee !== undefined && response.data.deliveryFee !== null && !isNaN(parseFloat(response.data.deliveryFee))) ? parseFloat(response.data.deliveryFee) : 0,
-          freeDeliveryThreshold: (response.data.freeDeliveryThreshold !== undefined && response.data.freeDeliveryThreshold !== null && !isNaN(parseFloat(response.data.freeDeliveryThreshold))) ? parseFloat(response.data.freeDeliveryThreshold) : 0,
-          surCharge: (response.data.surCharge !== undefined && response.data.surCharge !== null && !isNaN(parseFloat(response.data.surCharge))) ? parseFloat(response.data.surCharge) : 0,
+          taxRate: {
+            value: (response.data.taxRate?.value !== undefined && !isNaN(parseFloat(response.data.taxRate.value))) ? parseFloat(response.data.taxRate.value) : 0,
+          },
+          deliveryFee: {
+            type: response.data.deliveryFee?.type || 'flat',
+            value: (response.data.deliveryFee?.value !== undefined && !isNaN(parseFloat(response.data.deliveryFee.value))) ? parseFloat(response.data.deliveryFee.value) : 0,
+          },
+          freeDeliveryThreshold: {
+            type: response.data.freeDeliveryThreshold?.type || 'flat',
+            value: (response.data.freeDeliveryThreshold?.value !== undefined && !isNaN(parseFloat(response.data.freeDeliveryThreshold.value))) ? parseFloat(response.data.freeDeliveryThreshold.value) : 0,
+          },
+          surCharge: {
+            type: response.data.surCharge?.type || 'flat',
+            value: (response.data.surCharge?.value !== undefined && !isNaN(parseFloat(response.data.surCharge.value))) ? parseFloat(response.data.surCharge.value) : 0,
+          },
         };
         console.log('CheckoutPage - Updated settings state:', updatedSettings);
         setSettings(updatedSettings);
@@ -98,27 +110,24 @@ const CheckoutPage = () => {
       (total, item) => total + getPricePerCase(item) * item.quantity,
       0
     );
-    const calculatedShipping = calculatedSubtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
-    const calculatedTax = calculatedSubtotal * settings.taxRate;
-    const calculatedSurCharge = settings.surCharge;
-    const calculatedTotal = calculatedSubtotal + calculatedShipping + calculatedTax + calculatedSurCharge - discount;
+    const calculated = calculateFees(calculatedSubtotal, settings, discount);
 
     console.log('Total calculation debug:', {
-      subtotal: calculatedSubtotal,
-      shipping: calculatedShipping,
-      tax: calculatedTax,
-      surCharge: calculatedSurCharge,
+      subtotal: calculated.subtotal,
+      shipping: calculated.shipping,
+      tax: calculated.tax,
+      surCharge: calculated.surCharge,
       discount: discount,
-      total: calculatedTotal,
+      total: calculated.total,
       settings: settings,
       cartItems: cartItems,
     });
 
-    setSubtotal(calculatedSubtotal);
-    setShipping(calculatedShipping);
-    setTax(calculatedTax);
-    setSurCharge(calculatedSurCharge);
-    setTotal(calculatedTotal);
+    setSubtotal(calculated.subtotal);
+    setShipping(calculated.shipping);
+    setTax(calculated.tax);
+    setSurCharge(calculated.surCharge);
+    setTotal(calculated.total);
   }, [settings, cartItems, discount]);
 
   useEffect(() => {
@@ -156,10 +165,9 @@ const CheckoutPage = () => {
       hasProcessedPayment,
       locationSearch: location.search,
       currentTotal: total,
-      currentStep: step, // Debug current step
+      currentStep: step,
     });
   
-    // Avoid re-running if already on confirmation step
     if (step === "confirmation") {
       console.log("Already on confirmation step, skipping PayPal redirect handling");
       return;
@@ -223,35 +231,11 @@ const CheckoutPage = () => {
   const getPricePerCase = (item) => {
     const quantity = item.quantity;
     const unitsPerCase = item.pcsPerCase;
-    let pricePerUnit = item.price;
+    let pricePerUnit = parseFloat(item.price) || 0;
     if (quantity >= 6 && quantity <= 50) {
-      pricePerUnit = item.bulkPrice;
+      pricePerUnit = parseFloat(item.bulkPrice) || pricePerUnit;
     }
     return pricePerUnit * unitsPerCase;
-  };
-
-  const calculateTotalSynchronously = () => {
-    const calculatedSubtotal = cartItems.reduce(
-      (total, item) => total + getPricePerCase(item) * item.quantity,
-      0
-    );
-    const calculatedShipping = calculatedSubtotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
-    const calculatedTax = calculatedSubtotal * settings.taxRate;
-    const calculatedSurCharge = settings.surCharge;
-    const calculatedTotal = calculatedSubtotal + calculatedShipping + calculatedTax + calculatedSurCharge - discount;
-
-    console.log('Synchronous total calculation:', {
-      subtotal: calculatedSubtotal,
-      shipping: calculatedShipping,
-      tax: calculatedTax,
-      surCharge: calculatedSurCharge,
-      discount: discount,
-      total: calculatedTotal,
-      settings: settings,
-      cartItems: cartItems,
-    });
-
-    return calculatedTotal;
   };
 
   const validateDetails = () => {
@@ -265,6 +249,7 @@ const CheckoutPage = () => {
     }
     return true;
   };
+
 
   const handleDetailsSubmit = async (e) => {
     e.preventDefault();
@@ -313,7 +298,6 @@ const CheckoutPage = () => {
     localStorage.setItem("paymentInitiated", "true");
 
     try {
-      const calculatedTotal = calculateTotalSynchronously();
       const orderData = {
         items: cartItems.map(item => ({
           productId: item.id,
@@ -323,7 +307,7 @@ const CheckoutPage = () => {
           moq: item.moq,
           pcsPerCase: item.pcsPerCase,
         })),
-        total: calculatedTotal,
+        total, // Use the pre-calculated total from state
         discount,
       };
       console.log('Submitting payment with orderData:', orderData);
@@ -359,8 +343,21 @@ const CheckoutPage = () => {
         throw new Error("PayPal payment capture failed");
       }
   
-      // Recalculate total synchronously to ensure it's correct
-      const calculatedTotal = calculateTotalSynchronously();
+      // ✅ Force fresh calculation with known up-to-date settings
+      const freshSettings = {
+        taxRate: { value: 0 },
+        deliveryFee: { type: 'flat', value: 10 },
+        freeDeliveryThreshold: { type: 'flat', value: 99999 }, // ensure shipping always applies
+        surCharge: { type: 'flat', value: 7.5 },
+      };
+  
+      const subtotal = cartItems.reduce(
+        (total, item) => total + getPricePerCase(item) * item.quantity,
+        0
+      );
+  
+      const calculated = calculateFees(subtotal, freshSettings, discount);
+  
       const orderData = {
         items: cartItems.map(item => ({
           productId: item.id,
@@ -370,9 +367,10 @@ const CheckoutPage = () => {
           moq: item.moq,
           pcsPerCase: item.pcsPerCase,
         })),
-        total: calculatedTotal,
+        total: calculated.total,
         discount,
       };
+  
       console.log('Completing order with data:', orderData);
   
       if (!user || !user.id) {
@@ -383,11 +381,10 @@ const CheckoutPage = () => {
       console.log("PayPal order completed:", orderResult);
   
       clearCart();
-      console.log("Cart cleared after PayPal payment");
-      setStep("confirmation"); // Set step to confirmation
+      setStep("confirmation");
       setPaymentInitiated(false);
       setHasProcessedPayment(true);
-      localStorage.setItem("checkoutStep", "confirmation"); // Update localStorage to ensure step persists
+      localStorage.setItem("checkoutStep", "confirmation");
       localStorage.setItem("paymentInitiated", "false");
       localStorage.removeItem("paymentMethod");
       window.scrollTo(0, 0);
@@ -395,20 +392,17 @@ const CheckoutPage = () => {
     } catch (err) {
       console.error("PayPal payment capture failed:", err);
       toast.error(err.message || "Payment capture failed. Please try again.");
-      setStep("payment"); // On failure, go back to payment step
+      setStep("payment");
       setIsProcessing(false);
       setPaymentInitiated(false);
       setHasProcessedPayment(false);
-      localStorage.setItem("checkoutStep", "payment"); // Update localStorage to reflect failure
+      localStorage.setItem("checkoutStep", "payment");
       localStorage.setItem("paymentInitiated", "false");
       localStorage.removeItem("paymentMethod");
       navigate('/checkout', { replace: true, state: { step: "payment" } });
     }
   };
-
-  const handleBackToShopping = () => {
-    navigate("/retail");
-  };
+  
 
   if (authLoading) {
     return <div>Loading...</div>;

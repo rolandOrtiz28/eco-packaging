@@ -530,14 +530,29 @@ function ChatWidget() {
 
   return (
     <>
-      <button
-        onClick={toggleChat}
-        className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-eco text-white flex items-center justify-center shadow-lg hover:bg-eco-dark transition-all duration-300 sm:bottom-6 sm:right-6"
-        aria-label="Chat with us"
-      >
-        <MessageSquare size={24} />
-      </button>
+  <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 sm:bottom-6 sm:right-6">
+  {/* Rectangular "Chat with us" button */}
+  <button
+    onClick={toggleChat}
+    className="h-10 px-4 rounded-full bg-white text-eco shadow-lg flex items-center gap-2 hover:bg-gray-100 transition-all duration-300"
+    aria-label="Chat with us"
+  >
+    <span className="font-medium">Chat with us</span>
+    <span>👋</span>
+  </button>
 
+  {/* Circular chat icon with gradient and stroke animation */}
+  <button
+    onClick={toggleChat}
+    className="message-button w-12 h-12 rounded-full bg-gradient-to-r from-eco to-eco-light text-white flex items-center justify-center shadow-lg hover:brightness-110 transition-all duration-300"
+    aria-label="Chat with us"
+  >
+    <MessageSquare
+      size={20}
+      className="text-white [&_path]:stroke-eco-light [&_path]:stroke-2 [&_path]:stroke-dasharray-[70] [&_path]:stroke-dashoffset-[70] [&_path]:animate-travel-stroke"
+    />
+  </button>
+</div>
       {chatState === "open" && (
         <div
           className="fixed bottom-16 right-2 left-2 z-50 w-[calc(100vw-1rem)] max-w-[350px] min-w-[250px] mx-auto bg-white rounded-xl shadow-xl transition-all duration-300 flex flex-col overflow-hidden h-[70vh] max-h-[500px] sm:bottom-24 sm:right-6 sm:left-auto sm:w-[90vw] sm:max-w-[400px] sm:min-w-[300px] sm:h-[650px] sm:mx-0"

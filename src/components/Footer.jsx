@@ -119,7 +119,7 @@ function Footer() {
                 className="text-black"
                 required
               />
-              <Button type="submit" disabled={loading}>
+              <Button className="bg-white text-eco hover:text-white" type="submit" disabled={loading}>
                 {loading ? "Subscribing..." : "Subscribe"}
               </Button>
             </form>

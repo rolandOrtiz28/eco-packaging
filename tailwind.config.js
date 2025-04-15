@@ -83,13 +83,18 @@ module.exports = {
 		  "fade-out": {
 			"0%": { opacity: "1", transform: "translateY(0)" },
 			"100%": { opacity: "0", transform: "translateY(10px)" }
-		  }
+		  },
+		 "travel-stroke": {
+          "0%": { "stroke-dashoffset": "70" },
+          "100%": { "stroke-dashoffset": "-70" },
+        },
 		},
 		animation: {
 		  "accordion-down": "accordion-down 0.2s ease-out",
 		  "accordion-up": "accordion-up 0.2s ease-out",
 		  "fade-in": "fade-in 0.3s ease-out",
-		  "fade-out": "fade-out 0.3s ease-out"
+		  "fade-out": "fade-out 0.3s ease-out",
+		  "travel-stroke": "travel-stroke 3s linear infinite",
 		},
 		fontFamily: {
 		  sans: ['Inter', 'sans-serif'],

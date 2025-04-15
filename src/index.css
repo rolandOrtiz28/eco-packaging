@@ -76,3 +76,23 @@
     @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
   }
 }
+
+
+/* Target the SVG paths inside MessageSquare */
+.message-button svg path {
+  stroke: #25553d; /* eco.light color for the stroke */
+  stroke-width: 2;
+  fill: white; /* Keep the icon filled white */
+  stroke-dasharray: 70; /* Length of the dash */
+  stroke-dashoffset: 70; /* Starting offset for animation */
+  animation: travel-stroke 5s linear infinite; /* Apply the animation */
+}
+
+@keyframes travel-stroke {
+  0% {
+    stroke-dashoffset: 70; /* Start fully offset */
+  }
+  100% {
+    stroke-dashoffset: -70; /* Travel past the starting point for a seamless loop */
+  }
+}

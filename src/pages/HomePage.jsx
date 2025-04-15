@@ -392,84 +392,86 @@ const HomePage = () => {
           </div>
         </div>
       </section>
-
       <section className="section-padding bg-eco-paper">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h6 className="text-eco font-medium mb-2">OUR BLOG</h6>
-            <h2 className="text-3xl font-bold mb-3">Latest Articles</h2>
-            <p className="text-gray-700 max-w-2xl mx-auto">
-              Stay informed about sustainability trends, packaging innovations, and company updates.
-            </p>
-          </div>
+  <div className="container-custom">
+    <div className="text-center mb-12">
+      <h6 className="text-eco font-medium mb-2">OUR BLOG</h6>
+      <h2 className="text-3xl font-bold mb-3">Latest Articles</h2>
+      <p className="text-gray-700 max-w-2xl mx-auto">
+        Stay informed about sustainability trends, packaging innovations, and company updates.
+      </p>
+    </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[...Array(2)].map((_, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-sm h-96 animate-pulse">
-                  <div className="h-48 bg-gray-200 rounded-t-lg"></div>
-                  <div className="p-6">
-                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-                    <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
-                    <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+    {isLoading ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {[...Array(2)].map((_, index) => (
+          <div key={index} className="bg-white rounded-lg shadow-sm h-96 animate-pulse">
+            <div className="h-48 bg-gray-200 rounded-t-lg"></div>
+            <div className="p-6">
+              <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+              <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div ref={blogRef} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {blogPosts.length > 0 ? (
+          blogPosts.map((post) => (
+            <Link key={post.id} to={`/blog/${post.slug}`} className="group flex flex-col h-full">
+              <div className="bg-white rounded-lg overflow-hidden shadow-sm card-hover flex flex-col h-full">
+                {/* Image with consistent aspect ratio */}
+                <div className="relative pt-[56.25%] overflow-hidden">
+                  <img
+                    src={post.images && post.images.length > 0 ? post.images[0].url : 'https://via.placeholder.com/800x450'}
+                    alt={post.title}
+                    className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-6 flex-grow flex flex-col">
+                  <p className="text-sm text-eco font-medium mb-2">
+                    {new Date(post.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <h3 className="text-xl font-semibold mb-3 group-hover:text-eco transition-colors line-clamp-2">
+                    {post.title}
+                  </h3>
+                  <p className="text-gray-700 mb-4 line-clamp-3">
+                    {post.excerpt}
+                  </p>
+                  <div className="mt-auto">
+                    <p className="text-eco font-medium inline-flex items-center">
+                      Read More
+                      <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div ref={blogRef} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {blogPosts.length > 0 ? (
-                blogPosts.map((post) => (
-                  <Link key={post.id} to={`/blog/${post.slug}`} className="group">
-                    <div className="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
-                      <div className="h-48 overflow-hidden">
-                        <img
-                          src={post.images && post.images.length > 0 ? post.images[0].url : 'https://via.placeholder.com/800x400'}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                      <div className="p-6">
-                        <p className="text-sm text-eco font-medium mb-2">
-                          {new Date(post.date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
-                        <h3 className="text-xl font-semibold mb-3 group-hover:text-eco transition-colors">
-                          {post.title}
-                        </h3>
-                        <p className="text-gray-700 mb-4 line-clamp-2">
-                          {post.excerpt}
-                        </p>
-                        <p className="text-eco font-medium inline-flex items-center">
-                          Read More
-                          <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <p className="text-center text-gray-700 col-span-2">No blog posts available.</p>
-              )}
-            </div>
-          )}
-
-          <div className="text-center mt-12">
-            <Link to="/blog">
-              <Button variant="outline" className="border-eco text-eco hover:bg-eco/10">
-                View All Articles
-              </Button>
+              </div>
             </Link>
-          </div>
-        </div>
-      </section>
+          ))
+        ) : (
+          <p className="text-center text-gray-700 col-span-2">No blog posts available.</p>
+        )}
+      </div>
+    )}
+
+    <div className="text-center mt-12">
+      <Link to="/blog">
+        <Button variant="outline" className="border-eco text-eco hover:bg-eco/10">
+          View All Articles
+        </Button>
+      </Link>
+    </div>
+  </div>
+</section>
 
       <div ref={testimonialsRef}>
         <Testimonials />
