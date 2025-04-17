@@ -34,7 +34,7 @@ function SidebarCart() {
     const fetchSettings = async () => {
       try {
         const response = await api.get('/api/settings');
-        console.log('SidebarCart - Fetched settings from API:', response.data);
+
         const updatedSettings = {
           taxRate: {
             value: (response.data.taxRate?.value !== undefined && !isNaN(parseFloat(response.data.taxRate.value))) ? parseFloat(response.data.taxRate.value) : 0,
@@ -52,7 +52,7 @@ function SidebarCart() {
             value: (response.data.surCharge?.value !== undefined && !isNaN(parseFloat(response.data.surCharge.value))) ? parseFloat(response.data.surCharge.value) : 0,
           },
         };
-        console.log('SidebarCart - Updated settings state:', updatedSettings);
+      
         setSettings(updatedSettings);
       } catch (err) {
         console.error("Error fetching settings:", err);
@@ -66,41 +66,34 @@ function SidebarCart() {
     const quantity = item.quantity || 1;
     const unitsPerCase = item.pcsPerCase;
     let pricePerUnit = parseFloat(item.price) || 0;
-    console.log('SidebarCart - getPricePerCase - Item:', {
-      itemId: item.id,
-      name: item.name,
-      price: item.price,
-      quantity,
-      bulkPrice: item.bulkPrice,
-      pcsPerCase: item.pcsPerCase,
-      pricePerUnit,
-    });
+    // console.log('SidebarCart - getPricePerCase - Item:', {
+    //   itemId: item.id,
+    //   name: item.name,
+    //   price: item.price,
+    //   quantity,
+    //   bulkPrice: item.bulkPrice,
+    //   pcsPerCase: item.pcsPerCase,
+    //   pricePerUnit,
+    // });
     if (quantity >= 6 && quantity <= 50) {
       pricePerUnit = parseFloat(item.bulkPrice) || pricePerUnit;
-      console.log('SidebarCart - Applied bulkPrice:', pricePerUnit);
+    
     }
     const pricePerCase = pricePerUnit * unitsPerCase;
-    console.log('SidebarCart - getPricePerCase - Returned pricePerCase:', pricePerCase);
+
     return pricePerCase;
   };
 
-  console.log('SidebarCart - Cart items:', cartItems);
   const subtotal = cartItems.reduce((total, item) => {
     const pricePerCase = getPricePerCase(item);
     const itemTotal = pricePerCase * (item.quantity || 1);
-    console.log('SidebarCart - Subtotal calculation for item:', {
-      itemId: item.id,
-      name: item.name,
-      pricePerCase,
-      quantity: item.quantity,
-      itemTotal,
-    });
+  
     return total + itemTotal;
   }, 0);
-  console.log('SidebarCart - Calculated subtotal:', subtotal);
+
 
   const { shipping, tax, surCharge, total } = calculateFees(subtotal, settings, discount);
-  console.log('SidebarCart - Fee calculation:', { shipping, tax, surCharge, total });
+
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -144,7 +137,7 @@ function SidebarCart() {
         >
           <ShoppingBag className="h-5 w-5" />
           {totalItems > 0 && (
-            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">
+            <span className="absolute -top-1 -right-1 bg-eco p-2 text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">
               {totalItems}
             </span>
           )}
@@ -177,9 +170,11 @@ function SidebarCart() {
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="overflow-y-auto flex-1 py-2 px-1 -mx-1">
               {cartItems.map((item) => (
+         
                 <div key={item.id} className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="h-16 w-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
                     <img
+                    
                       src={item.image}
                       alt={item.name}
                       className="h-full w-full object-cover"
@@ -234,13 +229,13 @@ function SidebarCart() {
                   placeholder="Promo code"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
-                  className="flex-1 h-10"
+                  className="flex-2 h-8"
                 />
                 <Button
                   onClick={handleApplyCoupon}
                   variant="outline"
                   disabled={isApplyingCoupon || !couponCode.trim()}
-                  className="h-10"
+                  className="h-8"
                 >
                   {isApplyingCoupon ? "Applying..." : "Apply"}
                 </Button>

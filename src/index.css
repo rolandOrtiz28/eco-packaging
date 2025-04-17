@@ -114,3 +114,22 @@
 .animate-float2 {
   animation: float2 10s ease-in-out infinite;
 }
+
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%); /* Since we doubled the content, -50% will loop seamlessly */
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+  display: flex; /* Ensure flexbox layout */
+}
+
+.animate-scroll:hover {
+  animation-play-state: paused;
+}
