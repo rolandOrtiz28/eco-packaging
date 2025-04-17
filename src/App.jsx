@@ -36,6 +36,7 @@ import QuotesPage from './pages/admin/QuotesPage';
 import OrdersPage from './pages/admin/OrdersPage';
 import BlogAdminPage from './pages/admin/BlogPage';
 import BlogFormPage from './pages/admin/BlogFormPage';
+import BannersPage from './pages/admin/BannersPage';
 import PaymentReturnsPage from "./pages/PaymentReturnsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 
@@ -132,8 +133,7 @@ const App = () => {
                 <Route path="blog" element={<BlogAdminPage />} />
                 <Route path="blog/new" element={<BlogFormPage />} />
                 <Route path="blog/edit/:slug" element={<BlogFormPage />} />
-                <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
-                <Route path="reports" element={<div>Reports Page (Coming Soon)</div>} />
+                <Route path="banners" element={<BannersPage />} />
               </Route>
             </Routes>
           </ErrorBoundary>

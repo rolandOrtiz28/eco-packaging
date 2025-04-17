@@ -687,5 +687,68 @@ export const getSubscribers = async () => {
   }
 };
 
+
+// banners
+// Add to existing api.js file
+export const getBanners = async () => {
+  try {
+    const response = await api.get('/api/banners');
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error('Error fetching banners:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    return [];
+  }
+};
+
+export const createBanner = async (formData) => {
+  try {
+    const response = await api.post('/api/banners', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating banner:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+export const updateBanner = async (id, formData) => {
+  try {
+    const response = await api.put(`/api/banners/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating banner with ID ${id}:`, {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+export const deleteBanner = async (id) => {
+  try {
+    const response = await api.delete(`/api/banners/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting banner with ID ${id}:`, {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
 // Export the api instance
 export { api };

@@ -81,6 +81,19 @@ const CustomBagsPage = () => {
       isBestSeller: false,
     },
     {
+      id: "drawstring-bag-series",
+      name: "Drawstring Bag Series",
+      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_5_wdzliu.png",
+      description: "designed for easy carrying of everyday essentials.",
+      bulkPrice: 3.0,
+      pcsPerCase: 80,
+      moq: 400,
+      material: "Canvas",
+      usage: "Multi-purpose",
+      isEcoFriendly: true,
+      isBestSeller: false
+},
+    {
       id: "backpack-series",
       name: "Backpack Series",
       image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_6_pvzetl.png",

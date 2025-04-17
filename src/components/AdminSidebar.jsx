@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { BarChart, User, Users, FileText, Settings, LogOut, MessageSquare, Tag, Package, FileCheck, ShoppingCart, BookOpen } from "lucide-react";
+import { BarChart, User, Users, FileText, Settings, LogOut, MessageSquare, Tag, Package, FileCheck, ShoppingCart, BookOpen, Image } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,8 @@ function AdminSidebar() {
     quotes: 0,
     promocodes: 0,
     chat: 0,
-    blog: 0 // New
+    blog: 0,
+    banners: 0
   });
   const socketRef = useRef(null);
 
@@ -100,6 +101,13 @@ function AdminSidebar() {
       }
     });
 
+    socketRef.current.on('new-banner', () => {
+      if (location.pathname !== '/admin/banners') {
+        setNotifications((prev) => ({ ...prev, banners: prev.banners + 1 }));
+        toast.info("New banner added");
+      }
+    });
+
     return () => {
       console.log('Sidebar: Disconnecting socket');
       socketRef.current.disconnect();
@@ -116,7 +124,8 @@ function AdminSidebar() {
       quotes: path === '/admin/quotes' ? 0 : prev.quotes,
       promocodes: path === '/admin/promocodes' ? 0 : prev.promocodes,
       chat: path === '/admin/chat' ? 0 : prev.chat,
-      blog: path === '/admin/blog' ? 0 : prev.blog
+      blog: path === '/admin/blog' ? 0 : prev.blog,
+      banners: path === '/admin/banners' ? 0 : prev.banners
     }));
   }, [location.pathname]);
 
@@ -297,6 +306,25 @@ function AdminSidebar() {
             </Badge>
           )}
         </NavLink>
+
+        <NavLink
+  to="/admin/banners"
+  className={({ isActive }) =>
+    `flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
+      isActive
+        ? "bg-eco-light text-eco-dark font-medium"
+        : "text-eco-dark hover:bg-eco-light"
+    }`
+  }
+>
+  <Image className="mr-2 h-4 w-4" />
+  Banners
+  {notifications.banners > 0 && (
+    <Badge variant="destructive" className="ml-auto text-xs">
+      {notifications.banners}
+    </Badge>
+  )}
+</NavLink>
       </nav>
 
       <div className="mt-auto pt-6">
