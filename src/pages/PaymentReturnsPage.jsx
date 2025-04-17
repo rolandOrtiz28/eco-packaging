@@ -24,7 +24,7 @@ const PaymentReturnsPage = () => {
                 </div>
                 <ul className="text-gray-700 space-y-3">
                   <li>
-                    Physical payment must be made before or upon delivery in cash or check payable to Eco Packaging Products Inc.
+                    Physical payment must be made before or upon delivery in cash or check payable to EcoLogic Solutions LLC
                   </li>
                   <li>
                     Electronic payments can be in the form of credit card, debit card, or Zelle® to contact@bagstoryusa.com.

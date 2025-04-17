@@ -16,7 +16,7 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [settings, setSettings] = useState({
-    freeDeliveryThreshold: 50,
+    freeDeliveryThreshold: { type: 'flat', value: 50 },
   });
 
   useEffect(() => {
@@ -41,7 +41,7 @@ const ProductDetailPage = () => {
       try {
         const response = await api.get('/api/settings');
         setSettings({
-          freeDeliveryThreshold: response.data.freeDeliveryThreshold || 50,
+          freeDeliveryThreshold: response.data.freeDeliveryThreshold || { type: 'flat', value: 50 },
         });
       } catch (err) {
         console.error("Error fetching settings:", err);
@@ -237,7 +237,7 @@ const ProductDetailPage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Truck size={18} className="text-eco" />
-                    <span>Free shipping on orders over ${settings.freeDeliveryThreshold.toFixed(2)}</span>
+                    <span>Free shipping on orders over ${settings.freeDeliveryThreshold.value.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

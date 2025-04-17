@@ -33,7 +33,7 @@ const AboutPage = () => {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-eco to-eco-dark py-24 text-white">
         <div className="container mx-auto px-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">About Eco Packaging Products Inc.</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">About EcoLogic Solutions LLC</h1>
           <p className="text-xl max-w-3xl mx-auto mb-8">
             Pioneering sustainable packaging solutions with innovation, quality, and environmental responsibility
           </p>
@@ -54,7 +54,7 @@ const AboutPage = () => {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-white/10 backdrop-blur-sm"></div>
       </section>
 
-      {/* Welcome to Eco Packaging Products Inc. Section */}
+      {/* Welcome to EcoLogic Solutions LLC Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-12 items-center">
@@ -70,10 +70,10 @@ const AboutPage = () => {
               <div className="inline-block bg-eco/10 text-eco px-4 py-2 rounded-full mb-4 font-medium">
                 Our Company
               </div>
-              <h2 className="text-3xl font-bold mb-6">Welcome to Eco Packaging Products Inc.</h2>
+              <h2 className="text-3xl font-bold mb-6">Welcome to EcoLogic Solutions LLC</h2>
               <div className="space-y-6 text-gray-700">
                 <p>
-                  Eco Packaging Products Inc. is a leading packaging company strategically located in New York, specializing in designing, manufacturing, and distributing high-quality non-woven bag solutions. Our unique business model leverages a robust supply chain network to deliver exceptional products and services.
+                  EcoLogic Solutions LLC is a leading packaging company strategically located in New York, specializing in designing, manufacturing, and distributing high-quality non-woven bag solutions. Our unique business model leverages a robust supply chain network to deliver exceptional products and services.
                 </p>
                 <p>
                   With unwavering commitment to innovation, quality, and customer satisfaction, we've developed core advantages that differentiate us in the market while providing clients with unparalleled service experiences.

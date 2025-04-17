@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Filter, SlidersHorizontal, X, Search } from "lucide-react";
+import { Filter, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -15,6 +15,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import CustomProductSeriesCard from "@/components/CustomProductSeriesCard";
 import QuoteFormModal from "@/components/QuoteFormModal";
+import { getProducts } from "@/utils/api";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -26,167 +27,10 @@ const CustomBagsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [filteredBags, setFilteredBags] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const bagSeriesData = [
-    {
-      id: "jute-bag-series",
-      name: "Jute Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744477756/bagstoryCustom/Screenshot_63_h9ru0x.png",
-      description: "Eco-friendly, durable bags made from natural jute fibers.",
-      bulkPrice: 2.5,
-      pcsPerCase: 100,
-      moq: 500,
-      material: "Jute",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: false,
-    },
-    {
-      id: "nylon-foldable-series",
-      name: "Nylon Foldable Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476136/bagstoryCustom/Screenshot_64_eysfhe.png",
-      description: "Lightweight, compact bags that fold into a small pouch.",
-      bulkPrice: 1.8,
-      pcsPerCase: 200,
-      moq: 1000,
-      material: "Nylon",
-      usage: "Travel",
-      isEcoFriendly: false,
-      isBestSeller: true,
-    },
-    {
-      id: "cooler-bag-series",
-      name: "Cooler Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744478046/bagstoryCustom/Screenshot_65_cfpl0d.png",
-      description: "Keeps your food and drinks fresh with insulated linings.",
-      bulkPrice: 5.0,
-      pcsPerCase: 50,
-      moq: 300,
-      material: "Nylon",
-      usage: "Cooler",
-      isEcoFriendly: false,
-      isBestSeller: false,
-    },
-    {
-      id: "wine-bag-series",
-      name: "Wine Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_5_wdzliu.png",
-      description: "Crafted to safely transport your favorite bottles.",
-      bulkPrice: 3.0,
-      pcsPerCase: 80,
-      moq: 400,
-      material: "Canvas",
-      usage: "Wine",
-      isEcoFriendly: true,
-      isBestSeller: false,
-    },
-    {
-      id: "drawstring-bag-series",
-      name: "Drawstring Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_5_wdzliu.png",
-      description: "designed for easy carrying of everyday essentials.",
-      bulkPrice: 3.0,
-      pcsPerCase: 80,
-      moq: 400,
-      material: "Canvas",
-      usage: "Multi-purpose",
-      isEcoFriendly: true,
-      isBestSeller: false
-},
-    {
-      id: "backpack-series",
-      name: "Backpack Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_6_pvzetl.png",
-      description: "Spacious, ergonomic designs for everyday use.",
-      bulkPrice: 10.0,
-      pcsPerCase: 20,
-      moq: 200,
-      material: "Oxford",
-      usage: "School/Work",
-      isEcoFriendly: false,
-      isBestSeller: true,
-    },
-    {
-      id: "stitching-bag-series",
-      name: "Stitching Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_7_tt8ocb.png",
-      description: "Features bags with reinforced stitching for added durability.",
-      bulkPrice: 2.0,
-      pcsPerCase: 120,
-      moq: 600,
-      material: "Canvas",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: false,
-    },
-    {
-      id: "heat-sealed-bag-series",
-      name: "Heat Sealed Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476136/bagstoryCustom/Screenshot_8_gvqgb2.png",
-      description: "Seamless, heat-sealed bags for a sleek finish.",
-      bulkPrice: 1.5,
-      pcsPerCase: 150,
-      moq: 800,
-      material: "Nylon",
-      usage: "Retail",
-      isEcoFriendly: false,
-      isBestSeller: false,
-    },
-    {
-      id: "pvc-bag-series",
-      name: "PVC Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_9_m9uqoc.png",
-      description: "Transparent, waterproof bags made from durable PVC material.",
-      bulkPrice: 2.2,
-      pcsPerCase: 100,
-      moq: 500,
-      material: "PVC",
-      usage: "Retail",
-      isEcoFriendly: false,
-      isBestSeller: false,
-    },
-    {
-      id: "canvas-bag-series",
-      name: "Canvas Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_10_cbkiil.png",
-      description: "Sturdy canvas material, offering a classic and timeless look.",
-      bulkPrice: 4.0,
-      pcsPerCase: 60,
-      moq: 400,
-      material: "Canvas",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: true,
-    },
-    {
-      id: "oxford-bag-series",
-      name: "Oxford Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_11_x0fb9i.png",
-      description: "Combines durability and elegance with Oxford fabric.",
-      bulkPrice: 6.0,
-      pcsPerCase: 40,
-      moq: 300,
-      material: "Oxford",
-      usage: "School/Work",
-      isEcoFriendly: false,
-      isBestSeller: false,
-    },
-    {
-      id: "woven-bag-series",
-      name: "Woven Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_12_l3hp8x.png",
-      description: "Intricately woven designs for a unique, artisanal look.",
-      bulkPrice: 3.5,
-      pcsPerCase: 80,
-      moq: 400,
-      material: "Woven",
-      usage: "Retail",
-      isEcoFriendly: true,
-      isBestSeller: false,
-    },
-  ];
-
-  const [filteredBags, setFilteredBags] = useState(bagSeriesData);
   const [filters, setFilters] = useState({
     sortBy: "priceLow",
     material: [],
@@ -195,6 +39,37 @@ const CustomBagsPage = () => {
     usage: [],
     others: [],
   });
+
+  useEffect(() => {
+    const fetchCustomBags = async () => {
+      try {
+        setIsLoading(true);
+        const products = await getProducts();
+        // Filter products where isCustomizable is true and map to the expected format
+        const customBags = products
+          .filter((product) => product.isCustomizable === true)
+          .map((product) => ({
+            id: product.id,
+            name: product.name,
+            image: product.image,
+            description: product.description,
+            bulkPrice: product.bulkPrice,
+            pcsPerCase: product.pcsPerCase,
+            moq: product.moq,
+            material: product.details.material || "Unknown",
+            usage: product.details.useCase || "Multi-purpose",
+            isEcoFriendly: product.isEcoFriendly || false,
+            isBestSeller: product.isBestSeller || false,
+          }));
+        setFilteredBags(customBags);
+      } catch (err) {
+        setError("Failed to load custom bags. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCustomBags();
+  }, []);
 
   const openModal = (product) => {
     setSelectedProduct(product);
@@ -207,7 +82,7 @@ const CustomBagsPage = () => {
   };
 
   useEffect(() => {
-    let filtered = [...bagSeriesData];
+    let filtered = [...filteredBags];
 
     // Sort By
     switch (filters.sortBy) {
@@ -345,6 +220,23 @@ const CustomBagsPage = () => {
       others: [],
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <p>Loading custom bags...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500">{error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div>

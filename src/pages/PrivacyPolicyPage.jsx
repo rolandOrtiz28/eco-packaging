@@ -23,7 +23,7 @@ const PrivacyPolicyPage = () => {
                   <h3 className="text-2xl font-semibold">Privacy Policy</h3>
                 </div>
                 <p className="text-gray-700 mb-4">
-                  This Privacy Policy explains how Eco Packaging Products Inc. ("BagStory," "we," "us," or "our") collects, uses, and protects your personal information when you visit our website, make a purchase, or interact with us. By using our services, you agree to the terms outlined in this policy.
+                  This Privacy Policy explains how EcoLogic Solutions LLC ("BagStory," "we," "us," or "our") collects, uses, and protects your personal information when you visit our website, make a purchase, or interact with us. By using our services, you agree to the terms outlined in this policy.
                 </p>
                 <h4 className="text-xl font-semibold mb-2">1. Information We Collect</h4>
                 <ul className="text-gray-700 space-y-3 mb-4">

@@ -34,7 +34,7 @@ function Footer() {
               <div className="w-lg flex items-center justify-center">
                 <img
                   className="w-64"
-                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744536373/BagStory/Logo_Light_rvng7u.png"
+                  src="https://res.cloudinary.com/rolandortiz/image/upload/v1744909615/bagstoryCustom/Logo_1_dfj3fg.png"
                   alt=""
                 />
               </div>
@@ -126,7 +126,7 @@ function Footer() {
             {message && <p className="text-sm mt-2">{message}</p>}
           </div>
           <p className="text-sm opacity-80 text-center">
-            © {new Date().getFullYear()} Eco Packaging Products Inc. All rights reserved.
+            © {new Date().getFullYear()} EcoLogic Solutions LLC All rights reserved.
           </p>
         </div>
       </div>

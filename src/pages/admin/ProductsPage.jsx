@@ -21,6 +21,11 @@ const INITIAL_FORM_DATA = {
   tags: '',
   featured: false,
   inStock: true,
+  isEcoFriendly: false,
+  isBestSeller: false,
+  isTrending: false,
+  isTopRated: false,
+  isCustomizable: false,
   details: {
     size: '',
     color: '',
@@ -43,19 +48,21 @@ const ProductsPage = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('products'); // State for active tab
   const { toast } = useToast();
 
+  const fetchProducts = async () => {
+    try {
+      const data = await getProducts();
+      setProducts(data);
+    } catch (error) {
+      showToast('Error', 'Failed to fetch products', 'destructive');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const data = await getProducts();
-        setProducts(data);
-      } catch (error) {
-        showToast('Error', 'Failed to fetch products', 'destructive');
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchProducts();
   }, []);
 
@@ -103,12 +110,19 @@ const ProductsPage = () => {
   };
 
   const handleAddProduct = async () => {
+    if (formData.images.length === 0) {
+      showToast('Error', 'At least one image is required to create a product', 'destructive');
+      return;
+    }
+
     setIsSubmitting(true);
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (key === 'details') data.append('details', JSON.stringify(formData.details));
       else if (key === 'images') formData.images.forEach(file => data.append('images', file));
-      else if (key !== 'existingImages' && key !== 'mainImageIndex') data.append(key, formData[key]);
+      else if (key !== 'existingImages' && key !== 'mainImageIndex') {
+        data.append(key, typeof formData[key] === 'boolean' ? formData[key].toString() : formData[key]);
+      }
     });
     try {
       const newProduct = await createProduct(data);
@@ -117,20 +131,27 @@ const ProductsPage = () => {
       setFormData(INITIAL_FORM_DATA);
       showToast('Success', 'Product added successfully');
     } catch (error) {
-      showToast('Error', 'Failed to add product', 'destructive');
+      showToast('Error', error.message || 'Failed to add product', 'destructive');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEditProduct = async () => {
+    if (formData.existingImages.length === 0 && formData.images.length === 0) {
+      showToast('Error', 'At least one image is required. Please upload an image or retain an existing one.', 'destructive');
+      return;
+    }
+
     setIsSubmitting(true);
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (key === 'details') data.append('details', JSON.stringify(formData.details));
       else if (key === 'images') formData.images.forEach(file => data.append('images', file));
       else if (key === 'existingImages') data.append('existingImages', JSON.stringify(formData.existingImages));
-      else if (key !== 'mainImageIndex') data.append(key, formData[key]);
+      else if (key !== 'mainImageIndex') {
+        data.append(key, typeof formData[key] === 'boolean' ? formData[key].toString() : formData[key]);
+      }
     });
     data.append('mainImageIndex', formData.mainImageIndex);
     try {
@@ -141,7 +162,7 @@ const ProductsPage = () => {
       setFormData(INITIAL_FORM_DATA);
       showToast('Success', 'Product updated successfully');
     } catch (error) {
-      showToast('Error', 'Failed to update product', 'destructive');
+      showToast('Error', error.message || 'Failed to update product', 'destructive');
     } finally {
       setIsSubmitting(false);
     }
@@ -170,6 +191,11 @@ const ProductsPage = () => {
       tags: product.tags.join(','),
       featured: product.featured,
       inStock: product.inStock,
+      isEcoFriendly: product.isEcoFriendly || false,
+      isBestSeller: product.isBestSeller || false,
+      isTrending: product.isTrending || false,
+      isTopRated: product.isTopRated || false,
+      isCustomizable: product.isCustomizable || false,
       details: product.details,
       images: [],
       existingImages: product.images || [],
@@ -218,7 +244,7 @@ const ProductsPage = () => {
     setFormData(prev => ({ ...prev, mainImageIndex: index }));
   };
 
-  const renderProductTable = () => (
+  const renderProductTable = (filteredData) => (
     <Table>
       <TableHeader>
         <TableRow className="bg-eco-paper">
@@ -230,7 +256,7 @@ const ProductsPage = () => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filteredProducts.map(product => (
+        {filteredData.map(product => (
           <TableRow key={product.id} className="hover:bg-eco-light/20">
             <TableCell className="py-3 px-4 text-sm text-eco-dark">{product.name}</TableCell>
             <TableCell className="py-3 px-4 hidden sm:table-cell text-sm">{product.category}</TableCell>
@@ -410,6 +436,9 @@ const ProductsPage = () => {
     p.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const regularProducts = filteredProducts.filter(p => !p.isCustomizable);
+  const customizeProducts = filteredProducts.filter(p => p.isCustomizable);
+
   return (
     <Card className="border-eco-light">
       <CardHeader>
@@ -434,18 +463,49 @@ const ProductsPage = () => {
             </Button>
           </div>
         </div>
+        {/* Tabs for Products and Customize Products */}
+        <div className="flex border-b border-eco-light mt-4">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
+              activeTab === 'products'
+                ? 'border-eco text-eco-dark'
+                : 'border-transparent text-muted-foreground hover:text-eco-dark'
+            }`}
+          >
+            Products
+          </button>
+          <button
+            onClick={() => setActiveTab('customize')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
+              activeTab === 'customize'
+                ? 'border-eco text-eco-dark'
+                : 'border-transparent text-muted-foreground hover:text-eco-dark'
+            }`}
+          >
+            Customize Products
+          </button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-eco" />
           </div>
-        ) : filteredProducts.length > 0 ? (
+        ) : activeTab === 'products' ? (
+          regularProducts.length > 0 ? (
+            <div className="rounded-md border border-eco-light overflow-x-auto">
+              {renderProductTable(regularProducts)}
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground py-4">No products found</p>
+          )
+        ) : customizeProducts.length > 0 ? (
           <div className="rounded-md border border-eco-light overflow-x-auto">
-            {renderProductTable()}
+            {renderProductTable(customizeProducts)}
           </div>
         ) : (
-          <p className="text-center text-sm text-muted-foreground py-4">No products found</p>
+          <p className="text-center text-sm text-muted-foreground py-4">No customizable products found</p>
         )}
       </CardContent>
 
@@ -475,6 +535,11 @@ const ProductsPage = () => {
                     {renderFormField('Category', 'category', 'category', formData.category)}
                     {renderFormField('Tags (comma-separated)', 'tags', 'tags', formData.tags)}
                     {renderCheckboxField('In Stock', 'inStock', 'inStock', formData.inStock)}
+                    {renderCheckboxField('Eco-Friendly', 'isEcoFriendly', 'isEcoFriendly', formData.isEcoFriendly)}
+                    {renderCheckboxField('Best Seller', 'isBestSeller', 'isBestSeller', formData.isBestSeller)}
+                    {renderCheckboxField('Trending', 'isTrending', 'isTrending', formData.isTrending)}
+                    {renderCheckboxField('Top Rated', 'isTopRated', 'isTopRated', formData.isTopRated)}
+                    {renderCheckboxField('Customizable', 'isCustomizable', 'isCustomizable', formData.isCustomizable)}
                   </>
                 ))}
               </div>
@@ -554,6 +619,11 @@ const ProductsPage = () => {
                     {renderFormField('Category', 'category', 'category', formData.category)}
                     {renderFormField('Tags (comma-separated)', 'tags', 'tags', formData.tags)}
                     {renderCheckboxField('In Stock', 'inStock', 'inStock', formData.inStock)}
+                    {renderCheckboxField('Eco-Friendly', 'isEcoFriendly', 'isEcoFriendly', formData.isEcoFriendly)}
+                    {renderCheckboxField('Best Seller', 'isBestSeller', 'isBestSeller', formData.isBestSeller)}
+                    {renderCheckboxField('Trending', 'isTrending', 'isTrending', formData.isTrending)}
+                    {renderCheckboxField('Top Rated', 'isTopRated', 'isTopRated', formData.isTopRated)}
+                    {renderCheckboxField('Customizable', 'isCustomizable', 'isCustomizable', formData.isCustomizable)}
                   </>
                 ))}
               </div>

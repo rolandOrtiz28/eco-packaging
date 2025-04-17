@@ -29,6 +29,7 @@ const DistributorPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [heroImageError, setHeroImageError] = useState(false);
 
   const headerRef = useRef(null);
   const businessRef = useRef(null);
@@ -51,6 +52,9 @@ const DistributorPage = () => {
     sustainability: false,
   });
 
+  // GSAP context for cleanup
+  const animationContext = useRef();
+
   // Unified filter state
   const [filters, setFilters] = useState({
     searchQuery: "",
@@ -63,216 +67,60 @@ const DistributorPage = () => {
     categories: [],
   });
 
-  // Custom products data with added fields
-  const customProductsData = [
-    {
-      id: "jute-bag-series",
-      name: "Jute Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744477756/bagstoryCustom/Screenshot_63_h9ru0x.png",
-      description: "Eco-friendly, durable bags made from natural jute fibers.",
-      category: "Customization",
-      bulkPrice: 2.5,
-      pcsPerCase: 100,
-      moq: 500,
-      material: "Jute",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "nylon-foldable-series",
-      name: "Nylon Foldable Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476136/bagstoryCustom/Screenshot_64_eysfhe.png",
-      description: "Lightweight, compact bags that fold into a small pouch.",
-      category: "Customization",
-      bulkPrice: 1.8,
-      pcsPerCase: 200,
-      moq: 1000,
-      material: "Nylon",
-      usage: "Travel",
-      isEcoFriendly: false,
-      isBestSeller: true,
-      type: "custom",
-    },
-    {
-      id: "cooler-bag-series",
-      name: "Cooler Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744478046/bagstoryCustom/Screenshot_65_cfpl0d.png",
-      description: "Keeps your food and drinks fresh with insulated linings.",
-      category: "Customization",
-      bulkPrice: 5.0,
-      pcsPerCase: 50,
-      moq: 300,
-      material: "Nylon",
-      usage: "Cooler",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "wine-bag-series",
-      name: "Wine Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_5_wdzliu.png",
-      description: "Crafted to safely transport your favorite bottles.",
-      category: "Customization",
-      bulkPrice: 3.0,
-      pcsPerCase: 80,
-      moq: 400,
-      material: "Canvas",
-      usage: "Wine",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "backpack-series",
-      name: "Backpack Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_6_pvzetl.png",
-      description: "Spacious, ergonomic designs for everyday use.",
-      category: "Customization",
-      bulkPrice: 10.0,
-      pcsPerCase: 20,
-      moq: 200,
-      material: "Oxford",
-      usage: "School/Work",
-      isEcoFriendly: false,
-      isBestSeller: true,
-      type: "custom",
-    },
-    {
-      id: "stitching-bag-series",
-      name: "Stitching Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_7_tt8ocb.png",
-      description: "Features bags with reinforced stitching for added durability.",
-      category: "Customization",
-      bulkPrice: 2.0,
-      pcsPerCase: 120,
-      moq: 600,
-      material: "Canvas",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "heat-sealed-bag-series",
-      name: "Heat Sealed Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476136/bagstoryCustom/Screenshot_8_gvqgb2.png",
-      description: "Seamless, heat-sealed bags for a sleek finish.",
-      category: "Customization",
-      bulkPrice: 1.5,
-      pcsPerCase: 150,
-      moq: 800,
-      material: "Nylon",
-      usage: "Retail",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "pvc-bag-series",
-      name: "PVC Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_9_m9uqoc.png",
-      description: "Transparent, waterproof bags made from durable PVC material.",
-      category: "Customization",
-      bulkPrice: 2.2,
-      pcsPerCase: 100,
-      moq: 500,
-      material: "PVC",
-      usage: "Retail",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "canvas-bag-series",
-      name: "Canvas Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_10_cbkiil.png",
-      description: "Sturdy canvas material, offering a classic and timeless look.",
-      category: "Customization",
-      bulkPrice: 4.0,
-      pcsPerCase: 60,
-      moq: 400,
-      material: "Canvas",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: true,
-      type: "custom",
-    },
-    {
-      id: "oxford-bag-series",
-      name: "Oxford Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_11_x0fb9i.png",
-      description: "Combines durability and elegance with Oxford fabric.",
-      category: "Customization",
-      bulkPrice: 6.0,
-      pcsPerCase: 40,
-      moq: 300,
-      material: "Oxford",
-      usage: "School/Work",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "woven-bag-series",
-      name: "Woven Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_12_l3hp8x.png",
-      description: "Intricately woven designs for a unique, artisanal look.",
-      category: "Customization",
-      bulkPrice: 3.5,
-      pcsPerCase: 80,
-      moq: 400,
-      material: "Woven",
-      usage: "Retail",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-  ];
-
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const data = await getDistributorProducts();
-        // Map distributor products to include required fields
-        const bulkData = data.map((product) => {
-          const bulkProduct = {
-            ...product,
-            type: "bulk",
-            moq: product.moq || 1,
-            material: product.details?.material || "Premium Non Woven",
-            usage: product.details?.useCase || "General",
-            isEcoFriendly: product.isEcoFriendly || false,
-            isBestSeller: product.featured || false,
-          };
+        const bulkData = data
+          .filter((product) => !product.isCustomizable)
+          .map((product) => {
+            const bulkProduct = {
+              ...product,
+              type: "bulk",
+              moq: product.moq || 1,
+              material: product.details?.material || "Premium Non Woven",
+              usage: product.details?.useCase || "General",
+              isEcoFriendly: product.isEcoFriendly || false,
+              isBestSeller: product.isBestSeller || product.featured || false,
+            };
 
-          // Normalize usage to match filter options
-          if (bulkProduct.usage) {
-            const usageLower = bulkProduct.usage.toLowerCase();
-            if (usageLower.includes("deli") || usageLower.includes("pack")) {
-              bulkProduct.usage = "Beer, Snacks, and Deli";
-            } else if (usageLower.includes("liquor")) {
-              bulkProduct.usage = "Wine & Liquor Bags";
-            } else {
-              bulkProduct.usage = "General";
+            if (bulkProduct.usage) {
+              const usageLower = bulkProduct.usage.toLowerCase();
+              if (usageLower.includes("deli") || usageLower.includes("pack")) {
+                bulkProduct.usage = "Beer, Snacks, and Deli";
+              } else if (usageLower.includes("liquor")) {
+                bulkProduct.usage = "Wine & Liquor Bags";
+              } else {
+                bulkProduct.usage = "General";
+              }
             }
-          }
 
-          return bulkProduct;
-        });
+            return bulkProduct;
+          });
 
-        console.log("Distributor Products:", bulkData); // Debug: Log distributor products
+        const customData = data
+          .filter((product) => product.isCustomizable)
+          .map((product) => ({
+            ...product,
+            type: "custom",
+            bulkPrice: product.bulkPrice,
+            pcsPerCase: product.pcsPerCase,
+            moq: product.moq,
+            material: product.details?.material || "Unknown",
+            usage: product.details?.useCase || "Multi-purpose",
+            isEcoFriendly: product.isEcoFriendly || false,
+            isBestSeller: product.isBestSeller || false,
+          }));
+
+        console.log("Distributor Products:", bulkData);
+        console.log("Custom Products:", customData);
 
         setProducts(bulkData);
-        setCustomProducts(customProductsData);
+        setCustomProducts(customData);
 
-        // Combine all products for unified filtering
-        const allProducts = [...bulkData, ...customProductsData];
+        const allProducts = [...bulkData, ...customData];
         setFilteredProducts(allProducts);
 
-        // Combine categories and ensure "Cup & Trays" is included
         const allCategories = Array.from(
           new Set(allProducts.map((product) => product.category))
         );
@@ -301,9 +149,8 @@ const DistributorPage = () => {
   useEffect(() => {
     let result = [...products, ...customProducts];
 
-    console.log("Current Filters:", filters); // Debug: Log current filters
+    console.log("Current Filters:", filters);
 
-    // Search filter
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
       result = result.filter(
@@ -314,20 +161,17 @@ const DistributorPage = () => {
       );
     }
 
-    // Category filter
     if (filters.categories.length > 0) {
       result = result.filter((product) =>
         filters.categories.includes(product.category)
       );
     }
 
-    // Price filter
     result = result.filter((product) => {
       const price = product.type === "bulk" ? product.price : product.bulkPrice;
       return price >= filters.priceRange[0] && price <= filters.priceRange[1];
     });
 
-    // Material filter
     if (filters.material.length > 0) {
       result = result.filter((product) =>
         filters.material.some((material) =>
@@ -338,13 +182,11 @@ const DistributorPage = () => {
       );
     }
 
-    // MOQ filter
     result = result.filter(
       (product) =>
         product.moq >= filters.moqRange[0] && product.moq <= filters.moqRange[1]
     );
 
-    // Usage filter
     if (filters.usage.length > 0) {
       result = result.filter((product) =>
         filters.usage.some((usage) =>
@@ -355,7 +197,6 @@ const DistributorPage = () => {
       );
     }
 
-    // Others filter
     if (filters.others.length > 0) {
       result = result.filter((product) =>
         filters.others.some((option) =>
@@ -366,7 +207,6 @@ const DistributorPage = () => {
       );
     }
 
-    // Sorting
     switch (filters.sortBy) {
       case "priceLow":
         result.sort((a, b) => {
@@ -398,125 +238,162 @@ const DistributorPage = () => {
         break;
     }
 
-    console.log("Filtered Products:", result); // Debug: Log filtered products
-
+    console.log("Filtered Products:", result);
     setFilteredProducts(result);
   }, [products, customProducts, filters]);
 
+  // Hero Section Animation (Separate useEffect to avoid re-running)
   useEffect(() => {
-    const animateSection = (ref, options, key) => {
-      if (ref.current && !hasAnimated.current[key]) {
+    if (headerRef.current && !hasAnimated.current.header) {
+      console.log("Animating header section");
+      gsap.fromTo(
+        headerRef.current.children,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          stagger: 0.2,
+          ease: "power3.out",
+          delay: 0.2, // Slight delay for smoother start
+          onComplete: () => {
+            console.log("Header animation completed");
+            hasAnimated.current.header = true;
+          },
+        }
+      );
+    }
+
+    return () => {
+      if (headerRef.current) {
+        gsap.killTweensOf(headerRef.current.children);
+      }
+    };
+  }, []); // Empty dependency array to run only on mount
+
+  // Other Animations (Run once on mount or when isLoading changes for products)
+  useEffect(() => {
+    // Initialize GSAP context for cleanup
+    animationContext.current = gsap.context(() => {
+      const animateSection = (ref, options, key) => {
+        if (ref.current && !hasAnimated.current[key]) {
+          gsap.fromTo(
+            ref.current.children,
+            { opacity: 0, y: 30 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 1,
+              stagger: options.stagger || 0.2,
+              ease: "power3.out",
+              delay: options.delay || 0,
+              scrollTrigger: {
+                trigger: ref.current,
+                start: "top 80%",
+                toggleActions: "play none none none",
+                onEnter: () => {
+                  console.log(`Animation triggered for ${key}`);
+                  hasAnimated.current[key] = true;
+                },
+              },
+            }
+          );
+        }
+      };
+
+      // Business Types Animation
+      animateSection(businessRef, { stagger: 0.15, delay: 0.2 }, "business");
+
+      // Process Animation
+      animateSection(processRef, { stagger: 0.15, delay: 0.2 }, "process");
+
+      // Catalog Header Animation
+      animateSection(catalogHeaderRef, { stagger: 0.2, delay: 0.2 }, "catalogHeader");
+
+      // Catalog Search Animation
+      if (catalogSearchRef.current && !hasAnimated.current.catalogSearch) {
         gsap.fromTo(
-          ref.current.children,
+          catalogSearchRef.current,
+          { opacity: 0, x: -30 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 1,
+            ease: "power3.out",
+            delay: 0.2,
+            scrollTrigger: {
+              trigger: catalogSearchRef.current,
+              start: "top 80%",
+              toggleActions: "play none none none",
+              onEnter: () => {
+                console.log("Animation triggered for catalogSearch");
+                hasAnimated.current.catalogSearch = true;
+              },
+            },
+          }
+        );
+      }
+
+      // Products Animation
+      if (!isLoading && filteredProducts.length > 0 && productsRef.current && !hasAnimated.current.products) {
+        gsap.fromTo(
+          productsRef.current.children,
           { opacity: 0, y: 30 },
           {
             opacity: 1,
             y: 0,
             duration: 1,
-            stagger: options.stagger || 0.2,
+            stagger: 0.15,
             ease: "power3.out",
+            delay: 0.2,
             scrollTrigger: {
-              trigger: ref.current,
+              trigger: productsRef.current,
               start: "top 80%",
               toggleActions: "play none none none",
-              onEnter: () => (hasAnimated.current[key] = true),
+              onEnter: () => {
+                console.log("Animation triggered for products");
+                hasAnimated.current.products = true;
+              },
             },
           }
         );
       }
-    };
 
-    // Header Animation
-    animateSection(headerRef, { stagger: 0.2 }, "header");
+      // Custom Products Animation
+      if (!isLoading && filteredProducts.filter((p) => p.type === "custom").length > 0 && customProductsRef.current && !hasAnimated.current.customProducts) {
+        gsap.fromTo(
+          customProductsRef.current.children,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            stagger: 0.15,
+            ease: "power3.out",
+            delay: 0.2,
+            scrollTrigger: {
+              trigger: customProductsRef.current,
+              start: "top 80%",
+              toggleActions: "play none none none",
+              onEnter: () => {
+                console.log("Animation triggered for customProducts");
+                hasAnimated.current.customProducts = true;
+              },
+            },
+          }
+        );
+      }
 
-    // Business Types Animation
-    animateSection(businessRef, { stagger: 0.15 }, "business");
-
-    // Process Animation
-    animateSection(processRef, { stagger: 0.15 }, "process");
-
-    // Catalog Header Animation
-    animateSection(catalogHeaderRef, { stagger: 0.2 }, "catalogHeader");
-
-    // Catalog Search Animation
-    if (catalogSearchRef.current && !hasAnimated.current.catalogSearch) {
-      gsap.fromTo(
-        catalogSearchRef.current,
-        { opacity: 0, x: -30 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: catalogSearchRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-            onEnter: () => (hasAnimated.current.catalogSearch = true),
-          },
-        }
-      );
-    }
-
-    // Products Animation
-    if (!isLoading && filteredProducts.length > 0 && productsRef.current && !hasAnimated.current.products) {
-      gsap.fromTo(
-        productsRef.current.children,
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          stagger: 0.15,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: productsRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-            onEnter: () => (hasAnimated.current.products = true),
-          },
-        }
-      );
-    }
-
-    // Custom Products Animation
-    if (!isLoading && filteredProducts.filter((p) => p.type === "custom").length > 0 && customProductsRef.current && !hasAnimated.current.customProducts) {
-      gsap.fromTo(
-        customProductsRef.current.children,
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          stagger: 0.15,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: customProductsRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-            onEnter: () => (hasAnimated.current.customProducts = true),
-          },
-        }
-      );
-    }
-
-    // Sustainability Animation
-    animateSection(sustainabilityRef, { stagger: 0.2 }, "sustainability");
+      // Sustainability Animation
+      animateSection(sustainabilityRef, { stagger: 0.2, delay: 0.2 }, "sustainability");
+    });
 
     return () => {
+      // Clean up all animations and ScrollTriggers
+      animationContext.current.revert();
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-      gsap.killTweensOf([
-        headerRef.current,
-        businessRef.current,
-        processRef.current,
-        catalogHeaderRef.current,
-        catalogSearchRef.current,
-        productsRef.current,
-        customProductsRef.current,
-        sustainabilityRef.current,
-      ]);
     };
-  }, [isLoading, filteredProducts]);
+  }, [isLoading]); // Only depend on isLoading
 
   const handleFilterChange = (filterName, value) => {
     setFilters((prev) => ({
@@ -566,6 +443,10 @@ const DistributorPage = () => {
     setSelectedProduct(null);
   };
 
+  const handleImageError = () => {
+    setHeroImageError(true);
+  };
+
   return (
     <div>
       <section className="bg-eco py-16">
@@ -598,9 +479,14 @@ const DistributorPage = () => {
             </div>
             <div className="hidden lg:block">
               <img 
-                src="https://res.cloudinary.com/rolandortiz/image/upload/v1744535099/BagStory/Untitled_design_epux3t.png" 
+                src={
+                  heroImageError
+                    ? "https://images.unsplash.com/photo-1600585154347-0e7e9b1f9f2b?auto=format&fit=crop&w=800&q=80"
+                    : "https://res.cloudinary.com/rolandortiz/image/upload/v1744535099/BagStory/Untitled_design_epux3t.png"
+                }
                 alt="Bulk packaging solutions" 
-                className="rounded-lg shadow-lg"
+                className="rounded-lg shadow-lg w-full h-auto"
+                onError={handleImageError}
               />
             </div>
           </div>

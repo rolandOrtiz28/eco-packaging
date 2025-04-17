@@ -121,30 +121,19 @@ function Header() {
         </div>
         
         <div className="flex items-center space-x-5 text-xs">
-          <Link to="/help" className="hover:underline flex items-center space-x-1">
+          <Link to="/contact" className="hover:underline flex items-center space-x-1">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>Help</span>
           </Link>
-          <Link to="/track-order" className="hover:underline flex items-center space-x-1">
+          <Link to="/profile" className="hover:underline flex items-center space-x-1">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>Track Order</span>
           </Link>
-          <div className="flex items-center space-x-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-            </svg>
-            <span>English</span>
-            <ChevronDown className="h-3 w-3" />
-          </div>
-          <div className="flex items-center space-x-1">
-            <span>$</span>
-            <span>USD</span>
-            <ChevronDown className="h-3 w-3" />
-          </div>
+          
         </div>
       </div>
 
@@ -166,7 +155,7 @@ function Header() {
         <Link to="/" className="flex items-center md:mx-0 mx-auto md:ml-0">
           <img 
             className="w-36 md:w-48 transition-transform hover:scale-105" 
-            src="https://res.cloudinary.com/rolandortiz/image/upload/v1744535303/BagStory/Logo_1_jsurar.png" 
+            src="https://res.cloudinary.com/rolandortiz/image/upload/v1744909042/bagstoryCustom/Logo_ilqcyn.png" 
             alt="BagStory Logo"
             loading="lazy"
           />

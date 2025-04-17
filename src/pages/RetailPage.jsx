@@ -21,8 +21,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 const RetailPage = () => {
-  const [products, setProducts] = useState([]);
-  const [customProducts, setCustomProducts] = useState([]);
+  const [products, setProducts] = useState([]); // Retail products (isCustomizable: false)
+  const [customProducts, setCustomProducts] = useState([]); // Customizable products (isCustomizable: true)
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -47,212 +47,62 @@ const RetailPage = () => {
     categories: [],
   });
 
-  // Hardcoded custom products
-  const customProductsData = [
-    {
-      id: "jute-bag-series",
-      name: "Jute Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744477756/bagstoryCustom/Screenshot_63_h9ru0x.png",
-      description: "Eco-friendly, durable bags made from natural jute fibers.",
-      category: "Customization",
-      bulkPrice: 2.5,
-      pcsPerCase: 100,
-      moq: 500,
-      material: "Jute",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "nylon-foldable-series",
-      name: "Nylon Foldable Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476136/bagstoryCustom/Screenshot_64_eysfhe.png",
-      description: "Lightweight, compact bags that fold into a small pouch.",
-      category: "Customization",
-      bulkPrice: 1.8,
-      pcsPerCase: 200,
-      moq: 1000,
-      material: "Nylon",
-      usage: "Travel",
-      isEcoFriendly: false,
-      isBestSeller: true,
-      type: "custom",
-    },
-    {
-      id: "cooler-bag-series",
-      name: "Cooler Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744478046/bagstoryCustom/Screenshot_65_cfpl0d.png",
-      description: "Keeps your food and drinks fresh with insulated linings.",
-      category: "Customization",
-      bulkPrice: 5.0,
-      pcsPerCase: 50,
-      moq: 300,
-      material: "Nylon",
-      usage: "Cooler",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "wine-bag-series",
-      name: "Wine Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_5_wdzliu.png",
-      description: "Crafted to safely transport your favorite bottles.",
-      category: "Customization",
-      bulkPrice: 3.0,
-      pcsPerCase: 80,
-      moq: 400,
-      material: "Canvas",
-      usage: "Wine",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "backpack-series",
-      name: "Backpack Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_6_pvzetl.png",
-      description: "Spacious, ergonomic designs for everyday use.",
-      category: "Customization",
-      bulkPrice: 10.0,
-      pcsPerCase: 20,
-      moq: 200,
-      material: "Oxford",
-      usage: "School/Work",
-      isEcoFriendly: false,
-      isBestSeller: true,
-      type: "custom",
-    },
-    {
-      id: "stitching-bag-series",
-      name: "Stitching Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_7_tt8ocb.png",
-      description: "Features bags with reinforced stitching for added durability.",
-      category: "Customization",
-      bulkPrice: 2.0,
-      pcsPerCase: 120,
-      moq: 600,
-      material: "Canvas",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "heat-sealed-bag-series",
-      name: "Heat Sealed Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476136/bagstoryCustom/Screenshot_8_gvqgb2.png",
-      description: "Seamless, heat-sealed bags for a sleek finish.",
-      category: "Customization",
-      bulkPrice: 1.5,
-      pcsPerCase: 150,
-      moq: 800,
-      material: "Nylon",
-      usage: "Retail",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "pvc-bag-series",
-      name: "PVC Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_9_m9uqoc.png",
-      description: "Transparent, waterproof bags made from durable PVC material.",
-      category: "Customization",
-      bulkPrice: 2.2,
-      pcsPerCase: 100,
-      moq: 500,
-      material: "PVC",
-      usage: "Retail",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "canvas-bag-series",
-      name: "Canvas Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_10_cbkiil.png",
-      description: "Sturdy canvas material, offering a classic and timeless look.",
-      category: "Customization",
-      bulkPrice: 4.0,
-      pcsPerCase: 60,
-      moq: 400,
-      material: "Canvas",
-      usage: "Grocery",
-      isEcoFriendly: true,
-      isBestSeller: true,
-      type: "custom",
-    },
-    {
-      id: "oxford-bag-series",
-      name: "Oxford Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_11_x0fb9i.png",
-      description: "Combines durability and elegance with Oxford fabric.",
-      category: "Customization",
-      bulkPrice: 6.0,
-      pcsPerCase: 40,
-      moq: 300,
-      material: "Oxford",
-      usage: "School/Work",
-      isEcoFriendly: false,
-      isBestSeller: false,
-      type: "custom",
-    },
-    {
-      id: "woven-bag-series",
-      name: "Woven Bag Series",
-      image: "https://res.cloudinary.com/rolandortiz/image/upload/v1744476135/bagstoryCustom/Screenshot_12_l3hp8x.png",
-      description: "Intricately woven designs for a unique, artisanal look.",
-      category: "Customization",
-      bulkPrice: 3.5,
-      pcsPerCase: 80,
-      moq: 400,
-      material: "Woven",
-      usage: "Retail",
-      isEcoFriendly: true,
-      isBestSeller: false,
-      type: "custom",
-    },
-  ];
-
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const data = await getProducts();
-        const retailData = data.map((product) => {
-          const retailProduct = {
-            ...product,
-            type: "retail",
-            moq: product.moq || 1,
-            material: product.details?.material || "Premium Non Woven",
-            usage: product.details?.useCase || "General",
-            isEcoFriendly: product.isEcoFriendly || false,
-            isBestSeller: product.featured || false,
-          };
-  
-          if (retailProduct.usage) {
-            const usageLower = retailProduct.usage.toLowerCase();
-            if (usageLower.includes("deli") || usageLower.includes("pack")) {
-              retailProduct.usage = "Beer, Snacks, and Deli";
-            } else if (usageLower.includes("liquor")) {
-              retailProduct.usage = "Wine & Liquor Bags";
-            } else {
-              retailProduct.usage = "General";
+
+        // Separate retail and customizable products
+        const retailData = data
+          .filter((product) => !product.isCustomizable)
+          .map((product) => {
+            const retailProduct = {
+              ...product,
+              type: "retail",
+              moq: product.moq || 1,
+              material: product.details?.material || "Premium Non Woven",
+              usage: product.details?.useCase || "General",
+              isEcoFriendly: product.isEcoFriendly || false,
+              isBestSeller: product.isBestSeller || product.featured || false,
+            };
+
+            if (retailProduct.usage) {
+              const usageLower = retailProduct.usage.toLowerCase();
+              if (usageLower.includes("deli") || usageLower.includes("pack")) {
+                retailProduct.usage = "Beer, Snacks, and Deli";
+              } else if (usageLower.includes("liquor")) {
+                retailProduct.usage = "Wine & Liquor Bags";
+              } else {
+                retailProduct.usage = "General";
+              }
             }
-          }
-  
-          return retailProduct;
-        });
-  
+
+            return retailProduct;
+          });
+
+        const customData = data
+          .filter((product) => product.isCustomizable)
+          .map((product) => ({
+            ...product,
+            type: "custom",
+            bulkPrice: product.bulkPrice,
+            pcsPerCase: product.pcsPerCase,
+            moq: product.moq,
+            material: product.details?.material || "Unknown",
+            usage: product.details?.useCase || "Multi-purpose",
+            isEcoFriendly: product.isEcoFriendly || false,
+            isBestSeller: product.isBestSeller || false,
+          }));
+
         console.log("Retail Products:", retailData);
+        console.log("Custom Products:", customData);
+
         setProducts(retailData);
-  
-        setCustomProducts(customProductsData);
-  
-        const allProducts = [...retailData, ...customProductsData];
+        setCustomProducts(customData);
+
+        const allProducts = [...retailData, ...customData];
         setFilteredProducts(allProducts);
-  
+
         // Combine categories and ensure "Cup & Trays" is included
         const allCategories = Array.from(
           new Set(allProducts.map((product) => product.category))
@@ -261,7 +111,7 @@ const RetailPage = () => {
           allCategories.push("Cup & Trays");
         }
         setCategories(allCategories);
-  
+
         const maxPrice = Math.max(
           ...allProducts.map((product) =>
             product.type === "retail" ? product.price : product.bulkPrice
@@ -275,7 +125,7 @@ const RetailPage = () => {
         setIsLoading(false);
       }
     };
-  
+
     fetchProducts();
   }, []);
 
@@ -748,25 +598,25 @@ const RetailPage = () => {
                 </div>
 
                 <div>
-  <label className="block text-sm font-medium mb-2">Categories</label>
-  <div className="space-y-2">
-    {categories.map((category) => (
-      <div key={category} className="flex items-center">
-        <Checkbox
-          id={`category-${category}`}
-          checked={filters.categories.includes(category)}
-          onCheckedChange={() => toggleFilterOption("categories", category)}
-        />
-        <label
-          htmlFor={`category-${category}`}
-          className="ml-2 text-sm cursor-pointer"
-        >
-          {category}
-        </label>
-      </div>
-    ))}
-  </div>
-</div>
+                  <label className="block text-sm font-medium mb-2">Categories</label>
+                  <div className="space-y-2">
+                    {categories.map((category) => (
+                      <div key={category} className="flex items-center">
+                        <Checkbox
+                          id={`category-${category}`}
+                          checked={filters.categories.includes(category)}
+                          onCheckedChange={() => toggleFilterOption("categories", category)}
+                        />
+                        <label
+                          htmlFor={`category-${category}`}
+                          className="ml-2 text-sm cursor-pointer"
+                        >
+                          {category}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
