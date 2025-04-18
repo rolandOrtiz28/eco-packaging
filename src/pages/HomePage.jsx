@@ -23,7 +23,7 @@ const HomePage = () => {
   const [topSellingProducts, setTopSellingProducts] = useState([]); // For Top Selling
   const [isLoading, setIsLoading] = useState(true);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [showNewsletterModal, setShowNewsletterModal] = useState(true);
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   const {
     email,
     setEmail,
@@ -51,6 +51,7 @@ const HomePage = () => {
   const trendingRef = useRef(null);
   const featuredRef = useRef(null);
 const blogGridRef = useRef(null);
+const modalRef = useRef(null);
 
   // Track animation state to prevent repeats
   const hasAnimated = useRef({
@@ -436,6 +437,56 @@ blogs: false,
       ]);
     };
   }, [isLoading]);
+  useEffect(() => {
+    const hasShownModal = sessionStorage.getItem("newsletterModalShown");
+
+    if (!hasShownModal && modalRef.current) {
+      // Show modal
+      setShowNewsletterModal(true);
+      sessionStorage.setItem("newsletterModalShown", "true");
+
+      // Fade-in animation
+      gsap.fromTo(
+        modalRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.5, ease: "power2.out" }
+      );
+
+      // Auto-close after 4 seconds with fade-out
+      const timer = setTimeout(() => {
+        if (modalRef.current) {
+          gsap.to(modalRef.current, {
+            opacity: 0,
+            duration: 0.5,
+            ease: "power2.in",
+            onComplete: () => setShowNewsletterModal(false),
+          });
+        } else {
+          setShowNewsletterModal(false);
+        }
+      }, 4000);
+
+      // Cleanup
+      return () => {
+        clearTimeout(timer);
+        gsap.killTweensOf(modalRef.current);
+      };
+    }
+  }, []);
+
+  // Handle manual close with fade-out
+  const handleCloseModal = () => {
+    if (modalRef.current) {
+      gsap.to(modalRef.current, {
+        opacity: 0,
+        duration: 0.5,
+        ease: "power2.in",
+        onComplete: () => setShowNewsletterModal(false),
+      });
+    } else {
+      setShowNewsletterModal(false);
+    }
+  };
 
   const nextBanner = () => {
     setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
@@ -1083,10 +1134,13 @@ blogs: false,
 
       {/* Newsletter Modal - Responsive layout only */}
       {showNewsletterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          ref={modalRef}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        >
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full flex flex-col sm:flex-row overflow-hidden relative">
             <button
-              onClick={() => setShowNewsletterModal(false)}
+              onClick={handleCloseModal}
               className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-lg sm:text-xl"
             >
               ×
