@@ -36,6 +36,7 @@ const OrdersPage = () => {
       setOrders(orders.map(order => (order.id === updatedOrder.id ? updatedOrder : order)));
       toast.success('Order status updated');
     } catch (error) {
+      console.error('Failed to update status:', error);
       toast.error('Failed to update status');
     }
   };
@@ -51,7 +52,8 @@ const OrdersPage = () => {
 
   const filteredOrders = orders.filter(order =>
     order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    order.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -83,6 +85,7 @@ const OrdersPage = () => {
               <TableHeader>
                 <TableRow className="bg-eco-paper">
                   <TableHead className="text-eco-dark font-medium text-sm py-3 px-4">Order ID</TableHead>
+                  <TableHead className="text-eco-dark font-medium text-sm py-3 px-4 hidden sm:table-cell">Name</TableHead>
                   <TableHead className="text-eco-dark font-medium text-sm py-3 px-4 hidden sm:table-cell">Email</TableHead>
                   <TableHead className="text-eco-dark font-medium text-sm py-3 px-4 hidden md:table-cell">Date</TableHead>
                   <TableHead className="text-eco-dark font-medium text-sm py-3 px-4 hidden md:table-cell">Payment Status</TableHead>
@@ -108,6 +111,7 @@ const OrdersPage = () => {
                       </div>
                       {expandedRows[order.id] && (
                         <div className="mt-2 sm:hidden text-xs text-muted-foreground space-y-1">
+                          <p>Name: {order.userId?.name || 'N/A'}</p>
                           <p>Email: {order.userId?.email || 'N/A'}</p>
                           <p>Date: {order.date}</p>
                           <p>Total: ${order.total.toFixed(2)}</p>
@@ -115,6 +119,7 @@ const OrdersPage = () => {
                         </div>
                       )}
                     </TableCell>
+                    <TableCell className="py-3 px-4 hidden sm:table-cell text-sm">{order.userId?.name || 'N/A'}</TableCell>
                     <TableCell className="py-3 px-4 hidden sm:table-cell text-sm">{order.userId?.email || 'N/A'}</TableCell>
                     <TableCell className="py-3 px-4 hidden md:table-cell text-sm">{order.date}</TableCell>
                     <TableCell className="py-3 px-4 hidden md:table-cell text-sm">{order.paymentStatus}</TableCell>
@@ -164,8 +169,11 @@ const OrdersPage = () => {
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-3 p-4 text-sm">
-                      
               <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <p className="text-muted-foreground">Name</p>
+                  <p className="text-eco-dark">{selectedOrder.userId?.name || 'N/A'}</p>
+                </div>
                 <div>
                   <p className="text-muted-foreground">Email</p>
                   <p className="text-eco-dark">{selectedOrder.userId?.email || 'N/A'}</p>

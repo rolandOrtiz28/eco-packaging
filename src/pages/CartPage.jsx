@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Trash2, ShoppingBag, ArrowRight, RefreshCw } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowRight, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/hooks/useCart";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { calculateFees } from "@/utils/calculateFees";
 
 const CartPage = () => {
-  const { cartItems, updateQuantity, removeFromCart, clearCart, discount, applyDiscount } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, clearCart, discount, applyDiscount, removeDiscount } = useCart();
   const { isAuthenticated } = useAuth();
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -95,9 +95,14 @@ const CartPage = () => {
       if (isNaN(subtotal) || subtotal <= 0) {
         throw new Error("Cannot apply promo code: Cart subtotal is invalid or zero.");
       }
+      // Ensure only one promo code by resetting discount before applying a new one
+      if (discount > 0) {
+        removeDiscount();
+      }
       const response = await api.post('/api/promo/apply', { code: couponCode, subtotal });
       applyDiscount(response.data.discount);
-      toast.success(`Promo code applied! You saved $${response.data.discount}`);
+      toast.success(`Promo code applied! You saved $${response.data.discount.toFixed(2)}`);
+      setCouponCode(""); // Clear the input after applying
     } catch (err) {
       console.error('Error applying promo code in CartPage:', err.response?.data || err.message);
       toast.error(err.response?.data?.error || err.message || "Failed to apply promo code");
@@ -217,19 +222,34 @@ const CartPage = () => {
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     className="flex-1"
+                    disabled={discount > 0} // Disable input if a promo is already applied
                   />
                   <Button
                     onClick={handleApplyCoupon}
                     variant="outline"
-                    disabled={isApplyingCoupon || !couponCode.trim()}
+                    disabled={isApplyingCoupon || !couponCode.trim() || discount > 0}
                   >
                     {isApplyingCoupon ? "Applying..." : "Apply"}
                   </Button>
                 </div>
                 {discount > 0 && (
-                  <p className="mt-2 text-green-600">
-                    Discount applied: ${discount.toFixed(2)}
-                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-green-600">
+                      Discount applied: ${discount.toFixed(2)}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        removeDiscount();
+                        toast.info("Promo code removed");
+                      }}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X size={16} className="mr-1" />
+                    
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -245,9 +265,12 @@ const CartPage = () => {
                       <span className="text-muted-foreground">Subtotal</span>
                       <span>${subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Discount</span>
-                      <span>-${discount.toFixed(2)}</span>
+                      <div className="flex items-center">
+                        <span>-${discount.toFixed(2)}</span>
+                        
+                      </div>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Shipping</span>

@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Users, Mail, UserPlus, Eye } from "lucide-react";
+import { Search, Users, Mail, UserPlus, Eye, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { getLeads, getUsers, getSubscribers } from "@/utils/api";
+import { getLeads, getUsers, getSubscribers, deleteLead } from "@/utils/api";
+import { useToast } from '@/components/ui/use-toast';
 
 function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,6 +19,7 @@ function LeadsPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("leads");
   const [selectedItem, setSelectedItem] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +40,10 @@ function LeadsPage() {
     };
     fetchData();
   }, []);
+
+  const showToast = (title, description, variant = 'default') => {
+    toast({ title, description, variant });
+  };
 
   const filterData = (data) =>
     data.filter(
@@ -70,6 +76,49 @@ function LeadsPage() {
     setSelectedItem(item);
   };
 
+  const handleDeleteLead = async (id) => {
+    try {
+      await deleteLead(id);
+      setLeads(prev => prev.filter(l => l._id !== id));
+      showToast('Success', 'Lead deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete lead:', error);
+      showToast('Error', 'Failed to delete lead', 'destructive');
+    }
+  };
+
+  const exportToCSV = () => {
+    // Define CSV headers
+    const headers = ['Name', 'Email', 'Source', 'Date', 'Status', 'Message'];
+    
+    // Convert leads to CSV rows
+    const rows = leads.map(lead => [
+      `"${lead.name?.replace(/"/g, '""') || ''}"`, // Escape quotes
+      `"${lead.email?.replace(/"/g, '""') || ''}"`,
+      `"${lead.source?.replace(/"/g, '""') || ''}"`,
+      `"${lead.date ? new Date(lead.date).toLocaleDateString() : ''}"`,
+      `"${lead.status?.replace(/"/g, '""') || ''}"`,
+      `"${lead.message?.replace(/"/g, '""') || ''}"`
+    ].join(','));
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows
+    ].join('\n');
+
+    // Create a Blob and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'leads_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <div className="p-4 text-center text-eco-dark">Loading...</div>;
   if (error) return <div className="p-4 text-center text-eco-dark">{error}</div>;
 
@@ -92,7 +141,12 @@ function LeadsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button className="ml-2 bg-eco text-white hover:bg-eco-dark h-8 text-sm">Export</Button>
+            <Button 
+              className="ml-2 bg-eco text-white hover:bg-eco-dark h-8 text-sm"
+              onClick={exportToCSV}
+            >
+              Export
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -158,6 +212,14 @@ function LeadsPage() {
                                 <Eye size={16} />
                               </Button>
                             </DialogTrigger>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteLead(lead._id)}
+                              className="text-eco-dark hover:text-eco hover:bg-eco-light p-1"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
                             {selectedItem && activeTab === "leads" && (
                               <DialogContent className="sm:max-w-md w-[90%] bg-eco-paper border-eco-light">
                                 <DialogHeader>

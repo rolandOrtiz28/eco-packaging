@@ -126,7 +126,7 @@ function QuoteFormModal({ product, isOpen, onClose }) {
             <div className="ml-3">
               <h3 className="font-medium">{product.name}</h3>
               <p className="text-sm text-muted-foreground">MOQ: {product.moq} units</p>
-              <p className="text-eco font-medium">${perCasePrice} per case ({product.pcsPerCase} units)</p>
+             
             </div>
           </div>
 

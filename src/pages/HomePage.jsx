@@ -504,139 +504,190 @@ blogs: false,
     <div className="bg-white">
       {/* Hero Banner Carousel - Responsive adjustments only */}
       <section className="relative h-[400px] sm:h-[500px] md:h-[600px] overflow-hidden">
-        {banners.length > 0 ? (
-          banners.map((banner, index) => (
-            <div
-              key={banner.id}
-              className={`absolute inset-0 transition-all duration-1000 ease-in-out flex items-center ${
-                index === currentBannerIndex 
-                  ? 'opacity-100 z-10 scale-100' 
-                  : 'opacity-0 z-0 scale-105'
-              } bg-cover bg-center`}
-              style={{ 
-                backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 100%), url(${banner.image})`,
-                backgroundPosition: 'center center',
-                backgroundSize: 'cover'
-              }}
-            >
-              <div className="container-custom grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 items-center relative z-10 px-4 sm:px-6">
+        {isLoading ? (
+          <div className="absolute inset-0 bg-gray-100 animate-pulse">
+            <div className="h-full w-full flex items-center">
+              <div className="container-custom grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 items-center px-4 sm:px-6">
                 <div className="text-center lg:text-left space-y-3 md:space-y-4">
-                  {/* Keep all original banner content and functionality */}
                   <div className="flex items-center justify-center lg:justify-start gap-2">
-                    <div
-                      className="inline-block"
-                      ref={(el) => {
-                        if (el && index === currentBannerIndex) {
-                          const svg = el.querySelector('svg');
-                          if (svg) {
-                            const path = svg.querySelector('path');
-                            if (path) {
-                              const length = path.getTotalLength();
-                              gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
-                              gsap.to(path, {
-                                strokeDashoffset: 0,
-                                duration: 1.5,
-                                ease: "power2.out",
-                                repeat: -1,
-                                repeatDelay: 1,
-                              });
-                            }
-                          }
-                        }
-                      }}
-                    >
-                      <Leaf
-                        className="w-5 h-5 sm:w-6 sm:h-6 text-eco text-shadow-lg/20 drop-shadow-md"
-                        strokeWidth={1}
-                      />
-                    </div>
-                    <span className="text-xs sm:text-sm md:text-base text-white/90 font-semibold tracking-wider drop-shadow-md">
-                      Eco Spotlight
-                    </span>
+                    <div className="h-5 w-5 sm:h-6 sm:w-6 bg-gray-200 rounded-full"></div>
+                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
                   </div>
-                  <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight drop-shadow-lg ${
-                    banner.titleColor === 'light' ? 'text-white' :
-                    banner.titleColor === 'dark' ? 'text-black' :
-                    banner.titleColor === 'gradient-white-to-eco' ? 'bg-gradient-to-r from-white to-eco bg-clip-text text-transparent' :
-                    banner.titleColor === 'gradient-black-to-eco' ? 'bg-gradient-to-r from-black to-eco bg-clip-text text-transparent' :
-                    'text-white'
-                  }`}>
-                    {banner.title}
-                  </h1>
-                  <p className={`text-base sm:text-lg md:text-xl mb-4 md:mb-6 max-w-2xl drop-shadow-md ${
-                    banner.subtitleColor === 'light' ? 'text-white/90' :
-                    banner.subtitleColor === 'dark' ? 'text-gray-900' :
-                    banner.subtitleColor === 'gradient-white-to-eco' ? 'bg-gradient-to-r from-white/90 to-eco/90 bg-clip-text text-transparent' :
-                    banner.subtitleColor === 'gradient-black-to-eco' ? 'bg-gradient-to-r from-black to-eco bg-clip-text text-transparent' :
-                    'text-white/90'
-                  }`}>
-                    {banner.subtitle}
-                  </p>
+                  <div className="h-10 sm:h-12 md:h-14 w-3/4 bg-gray-200 rounded mx-auto lg:mx-0"></div>
+                  <div className="h-6 sm:h-8 w-full max-w-2xl bg-gray-200 rounded mx-auto lg:mx-0"></div>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                    <Link to={banner.ctaLink}>
-                      <Button className={`px-6 py-3 sm:px-8 sm:py-4 rounded-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-xl text-sm sm:text-base ${
-                        banner.ctaColor === 'light' ? 'bg-white text-eco hover:bg-gray-100' :
-                        banner.ctaColor === 'dark' ? 'bg-gray-900 text-white hover:bg-gray-800' :
-                        banner.ctaColor === 'gradient-white-to-eco' ? 'bg-gradient-to-r from-white to-eco text-gray-900 hover:from-eco hover:to-eco-dark' :
-                        banner.ctaColor === 'gradient-black-to-eco' ? 'bg-gradient-to-r from-black to-eco text-white hover:from-eco hover:to-eco-dark' :
-                        'bg-white text-eco'
-                      }`}>
-                        {banner.ctaText}
-                      </Button>
-                    </Link>
-                    <Link to="/secondary">
-                      <Button variant="outline" className={`border-white bg-transparent px-6 py-3 sm:px-8 sm:py-4 rounded-lg transition-all text-sm sm:text-base ${
-                        banner.ctaColor === 'light' ? 'text-white hover:bg-white/10' :
-                        banner.ctaColor === 'dark' ? 'text-gray-900 hover:bg-gray-100' :
-                        banner.ctaColor === 'gradient-white-to-eco' ? 'text-white hover:bg-eco/10' :
-                        banner.ctaColor === 'gradient-black-to-eco' ? 'text-white hover:bg-eco/10' :
-                        'text-white'
-                      }`}>
-                        Learn more
-                      </Button>
-                    </Link>
+                    <div className="h-10 sm:h-12 w-32 sm:w-40 bg-gray-200 rounded-lg"></div>
+                    <div className="h-10 sm:h-12 w-32 sm:w-40 bg-gray-200 rounded-lg"></div>
                   </div>
                 </div>
               </div>
             </div>
-          ))
+          </div>
+        ) : banners.length > 0 ? (
+          <div ref={carouselRef}>
+            {banners.map((banner, index) => (
+              <div
+                key={banner.id}
+                className={`absolute inset-0 transition-all duration-1000 ease-in-out flex items-center ${
+                  index === currentBannerIndex
+                    ? 'opacity-100 z-10 scale-100'
+                    : 'opacity-0 z-0 scale-105'
+                } bg-cover bg-center`}
+                style={{
+                  backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 100%), url(${banner.image})`,
+                  backgroundPosition: 'center center',
+                  backgroundSize: 'cover',
+                }}
+              >
+                <div className="container-custom grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 items-center relative z-10 px-4 sm:px-6">
+                  <div className="text-center lg:text-left space-y-3 md:space-y-4">
+                    <div className="flex items-center justify-center lg:justify-start gap-2">
+                      <div
+                        className="inline-block"
+                        ref={(el) => {
+                          if (el && index === currentBannerIndex) {
+                            const svg = el.querySelector('svg');
+                            if (svg) {
+                              const path = svg.querySelector('path');
+                              if (path) {
+                                const length = path.getTotalLength();
+                                gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
+                                gsap.to(path, {
+                                  strokeDashoffset: 0,
+                                  duration: 1.5,
+                                  ease: "power2.out",
+                                  repeat: -1,
+                                  repeatDelay: 1,
+                                });
+                              }
+                            }
+                          }
+                        }}
+                      >
+                        <Leaf
+                          className="w-5 h-5 sm:w-6 sm:h-6 text-eco text-shadow-lg/20 drop-shadow-md"
+                          strokeWidth={1}
+                        />
+                      </div>
+                      <span className="text-xs sm:text-sm md:text-base text-white/90 font-semibold tracking-wider drop-shadow-md">
+                        Eco Spotlight
+                      </span>
+                    </div>
+                    <h1
+                      className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight drop-shadow-lg ${
+                        banner.titleColor === 'light'
+                          ? 'text-white'
+                          : banner.titleColor === 'dark'
+                          ? 'text-black'
+                          : banner.titleColor === 'gradient-white-to-eco'
+                          ? 'bg-gradient-to-r from-white to-eco bg-clip-text text-transparent'
+                          : banner.titleColor === 'gradient-black-to-eco'
+                          ? 'bg-gradient-to-r from-black to-eco bg-clip-text text-transparent'
+                          : 'text-white'
+                      }`}
+                    >
+                      {banner.title}
+                    </h1>
+                    <p
+                      className={`text-base sm:text-lg md:text-xl mb-4 md:mb-6 max-w-2xl drop-shadow-md ${
+                        banner.subtitleColor === 'light'
+                          ? 'text-white/90'
+                          : banner.subtitleColor === 'dark'
+                          ? 'text-gray-900'
+                          : banner.subtitleColor === 'gradient-white-to-eco'
+                          ? 'bg-gradient-to-r from-white/90 to-eco/90 bg-clip-text text-transparent'
+                          : banner.subtitleColor === 'gradient-black-to-eco'
+                          ? 'bg-gradient-to-r from-black to-eco bg-clip-text text-transparent'
+                          : 'text-white/90'
+                      }`}
+                    >
+                      {banner.subtitle}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                      <Link to={banner.ctaLink}>
+                        <Button
+                          className={`px-6 py-3 sm:px-8 sm:py-4 rounded-lg transition-all transform hover:scale-105
+
+ shadow-lg hover:shadow-xl text-sm sm:text-base ${
+                            banner.ctaColor === 'light'
+                              ? 'bg-white text-eco hover:bg-gray-100'
+                              : banner.ctaColor === 'dark'
+                              ? 'bg-gray-900 text-white hover:bg-gray-800'
+                              : banner.ctaColor === 'gradient-white-to-eco'
+                              ? 'bg-gradient-to-r from-white to-eco text-gray-900 hover:from-eco hover:to-eco-dark'
+                              : banner.ctaColor === 'gradient-black-to-eco'
+                              ? 'bg-gradient-to-r from-black to-eco text-white hover:from-eco hover:to-eco-dark'
+                              : 'bg-white text-eco'
+                          }`}
+                        >
+                          {banner.ctaText}
+                        </Button>
+                      </Link>
+                      <Link to="/secondary">
+                        <Button
+                          variant="outline"
+                          className={`border-white bg-transparent px-6 py-3 sm:px-8 sm:py-4 rounded-lg transition-all text-sm sm:text-base ${
+                            banner.ctaColor === 'light'
+                              ? 'text-white hover:bg-white/10'
+                              : banner.ctaColor === 'dark'
+                              ? 'text-gray-900 hover:bg-gray-100'
+                              : banner.ctaColor === 'gradient-white-to-eco'
+                              ? 'text-white hover:bg-eco/10'
+                              : banner.ctaColor === 'gradient-black-to-eco'
+                              ? 'text-white hover:bg-eco/10'
+                              : 'text-white'
+                          }`}
+                        >
+                          Learn more
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-800">
             <p className="text-lg sm:text-xl">No active banners available</p>
           </div>
         )}
 
-        {/* Carousel Controls - Responsive sizing only */}
-        <button 
-          onClick={prevBanner}
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 p-2 sm:p-3 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-110"
-          aria-label="Previous banner"
-        >
-          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-white" />
-        </button>
-        <button 
-          onClick={nextBanner}
-          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 p-2 sm:p-3 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-110"
-          aria-label="Next banner"
-        >
-          <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-white" />
-        </button>
-
-        {/* Carousel Indicators - Responsive spacing only */}
-        <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center gap-2 sm:gap-3 z-20">
-          {banners.map((_, index) => (
+        {/* Carousel Controls */}
+        {!isLoading && banners.length > 0 && (
+          <>
             <button
-              key={index}
-              onClick={() => goToBanner(index)}
-              className={`w-3 h-1 sm:w-4 sm:h-1.5 rounded-full transition-all duration-300 ${
-                index === currentBannerIndex 
-                  ? 'bg-white sm:w-8' 
-                  : 'bg-white/50 hover:bg-white/70'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+              onClick={prevBanner}
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 p-2 sm:p-3 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-110"
+              aria-label="Previous banner"
+            >
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-white" />
+            </button>
+            <button
+              onClick={nextBanner}
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 p-2 sm:p-3 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-110"
+              aria-label="Next banner"
+            >
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-white" />
+            </button>
+
+            {/* Carousel Indicators */}
+            <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center gap-2 sm:gap-3 z-20">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToBanner(index)}
+                  className={`w-3 h-1 sm:w-4 sm:h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentBannerIndex
+                      ? 'bg-white sm:w-8'
+                      : 'bg-white/50 hover:bg-white/70'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       {/* Promotional Banner - Responsive text only */}

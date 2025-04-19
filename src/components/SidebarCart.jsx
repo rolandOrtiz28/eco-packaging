@@ -15,7 +15,7 @@ import { calculateFees } from "@/utils/calculateFees";
 
 function SidebarCart() {
   const [open, setOpen] = useState(false);
-  const { cartItems, removeFromCart, updateQuantity, clearCart, discount, applyDiscount } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, clearCart, discount, applyDiscount, removeDiscount } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [couponCode, setCouponCode] = useState("");
@@ -66,18 +66,8 @@ function SidebarCart() {
     const quantity = item.quantity || 1;
     const unitsPerCase = item.pcsPerCase;
     let pricePerUnit = parseFloat(item.price) || 0;
-    // console.log('SidebarCart - getPricePerCase - Item:', {
-    //   itemId: item.id,
-    //   name: item.name,
-    //   price: item.price,
-    //   quantity,
-    //   bulkPrice: item.bulkPrice,
-    //   pcsPerCase: item.pcsPerCase,
-    //   pricePerUnit,
-    // });
     if (quantity >= 6 && quantity <= 50) {
       pricePerUnit = parseFloat(item.bulkPrice) || pricePerUnit;
-    
     }
     const pricePerCase = pricePerUnit * unitsPerCase;
 
@@ -91,9 +81,7 @@ function SidebarCart() {
     return total + itemTotal;
   }, 0);
 
-
   const { shipping, tax, surCharge, total } = calculateFees(subtotal, settings, discount);
-
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -104,9 +92,14 @@ function SidebarCart() {
       if (isNaN(subtotal) || subtotal <= 0) {
         throw new Error("Cannot apply promo code: Cart subtotal is invalid or zero.");
       }
+      // Ensure only one promo code by resetting discount before applying a new one
+      if (discount > 0) {
+        removeDiscount();
+      }
       const response = await api.post('/api/promo/apply', { code: couponCode, subtotal });
       applyDiscount(response.data.discount);
-      toast.success(`Promo code applied! You saved $${response.data.discount}`);
+      toast.success(`Promo code applied! You saved $${response.data.discount.toFixed(2)}`);
+      setCouponCode(""); // Clear the input after applying
     } catch (err) {
       console.error('Error applying promo code:', err.response?.data || err.message);
       toast.error(err.response?.data?.error || err.message || "Failed to apply promo code");
@@ -170,11 +163,9 @@ function SidebarCart() {
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="overflow-y-auto flex-1 py-2 px-1 -mx-1">
               {cartItems.map((item) => (
-         
                 <div key={item.id} className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="h-16 w-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
                     <img
-                    
                       src={item.image}
                       alt={item.name}
                       className="h-full w-full object-cover"
@@ -230,11 +221,12 @@ function SidebarCart() {
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
                   className="flex-2 h-8"
+                  disabled={discount > 0} // Disable input if a promo is already applied
                 />
                 <Button
                   onClick={handleApplyCoupon}
                   variant="outline"
-                  disabled={isApplyingCoupon || !couponCode.trim()}
+                  disabled={isApplyingCoupon || !couponCode.trim() || discount > 0}
                   className="h-8"
                 >
                   {isApplyingCoupon ? "Applying..." : "Apply"}
@@ -242,8 +234,20 @@ function SidebarCart() {
               </div>
               
               {discount > 0 && (
-                <div className="bg-green-50 text-green-700 px-3 py-2 rounded-md text-sm">
-                  Discount applied: ${discount.toFixed(2)}
+                <div className="bg-green-50 text-green-700 px-3 py-2 rounded-md text-sm flex items-center justify-between">
+                  <span>Discount applied: ${discount.toFixed(2)}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      removeDiscount();
+                      toast.info("Promo code removed");
+                    }}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <X size={14} className="mr-1" />
+                    Remove
+                  </Button>
                 </div>
               )}
 

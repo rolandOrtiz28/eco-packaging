@@ -15,7 +15,7 @@ export function CartProvider({ children }) {
   });
 
   const [discount, setDiscount] = useState(() => {
-    const savedDiscount = localStorage.getItem("cartDiscount"); // ✅ this is the correct key
+    const savedDiscount = localStorage.getItem("cartDiscount");
     return savedDiscount ? parseFloat(savedDiscount) : 0;
   });
 
@@ -26,7 +26,7 @@ export function CartProvider({ children }) {
 
   // Sync discount to localStorage
   useEffect(() => {
-    localStorage.setItem("cartDiscount", discount.toString()); // ✅ same key
+    localStorage.setItem("cartDiscount", discount.toString());
   }, [discount]);
 
   const addToCart = (product, quantity) => {
@@ -49,6 +49,7 @@ export function CartProvider({ children }) {
       const updatedCart = prev.filter((item) => item.id !== id);
       if (updatedCart.length === 0) {
         setDiscount(0); // Reset discount if cart becomes empty
+        localStorage.removeItem("cartDiscount");
       }
       return updatedCart;
     });
@@ -66,13 +67,18 @@ export function CartProvider({ children }) {
 
   const clearCart = () => {
     setCartItems([]);
-    setDiscount(0); // ✅ reset discount
+    setDiscount(0);
     localStorage.removeItem("cartItems");
-    localStorage.removeItem("cartDiscount"); // ✅ this was the broken key before
+    localStorage.removeItem("cartDiscount");
   };
 
   const applyDiscount = (discountValue) => {
     setDiscount(discountValue);
+  };
+
+  const removeDiscount = () => {
+    setDiscount(0);
+    localStorage.removeItem("cartDiscount");
   };
 
   return (
@@ -85,6 +91,7 @@ export function CartProvider({ children }) {
         clearCart,
         discount,
         applyDiscount,
+        removeDiscount,
       }}
     >
       {children}

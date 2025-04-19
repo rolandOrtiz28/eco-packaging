@@ -292,6 +292,11 @@ const CheckoutPage = () => {
       return;
     }
 
+    if (paymentMethod === 'stripe') {
+      toast.error("Stripe payment is currently disabled.");
+      return;
+    }
+
     setIsProcessing(true);
     setPaymentInitiated(true);
     localStorage.setItem("paymentMethod", paymentMethod);
@@ -856,16 +861,17 @@ const PaymentForm = ({
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 border rounded-md p-4 mb-3">
-                  <RadioGroupItem value="stripe" id="payment-stripe" />
-                  <Label htmlFor="payment-stripe" className="flex items-center">
-                    <img
-                      src="https://res.cloudinary.com/rolandortiz/image/upload/v1744599232/bagstoryCustom/478c619017eeac70f846790f388f4982_p4ahyc.png"
-                      alt="Credit Card Logo"
-                      className="h-6 w-auto mr-2"
-                    />
-                    Credit/Debit Card
-                  </Label>
-                </div>
+        <RadioGroupItem value="stripe" id="payment-stripe" disabled />
+        <Label htmlFor="payment-stripe" className="flex items-center">
+          <img
+            src="https://res.cloudinary.com/rolandortiz/image/upload/v1744599232/bagstoryCustom/478c619017eeac70f846790f388f4982_p4ahyc.png"
+            alt="Credit Card Logo"
+            className="h-6 w-auto mr-2 grayscale"
+          />
+          Credit/Debit Card
+          <span className="ml-2 text-base text-gray-500">Soon</span>
+        </Label>
+      </div>
               </RadioGroup>
             </div>
 

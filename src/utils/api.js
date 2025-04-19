@@ -386,8 +386,7 @@ export const completeStripeOrder = async (userId, paymentId, orderData) => {
 };
 
 // PROMO CODES
-// Note: fetchPromoCodes has an issue - it uses setPromoCodes which is undefined
-// You should either remove this function or fix it by passing setPromoCodes as a parameter
+
 export const fetchPromoCodes = async (setPromoCodes) => {
   try {
     const response = await api.get('/api/promo');
@@ -432,6 +431,20 @@ export const updatePromoCode = async (id, promoData) => {
     return response.data;
   } catch (error) {
     console.error('Error updating promo code:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+export const deletePromoCode = async (id) => {
+  try {
+    const response = await api.delete(`/api/promo/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting promo code with ID ${id}:`, {
       message: error.message,
       status: error.response?.status,
       data: error.response?.data,
@@ -629,6 +642,20 @@ export const getLeads = async () => {
     return [];
   }
 };
+
+export const deleteLead = async (id) => {
+try {
+const response = await api.delete(`/api/leads/${id}`);
+return response.data
+}catch{
+console.error(`Error deleting lead with ID ${id}:`, {
+  message: error.message,
+  status: error.response?.status,
+  data: error.response?.data
+})
+throw error
+}
+}
 
 export const getUsers = async () => {
   try {

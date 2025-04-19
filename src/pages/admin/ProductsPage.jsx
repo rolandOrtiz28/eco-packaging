@@ -44,11 +44,13 @@ const ProductsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [currentProduct, setCurrentProduct] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('products'); // State for active tab
+  const [activeTab, setActiveTab] = useState('products');
   const { toast } = useToast();
 
   const fetchProducts = async () => {
@@ -168,14 +170,26 @@ const ProductsPage = () => {
     }
   };
 
-  const handleDeleteProduct = async (id) => {
+  const handleDeleteProduct = async () => {
+    if (!productToDelete) return;
     try {
-      await deleteProduct(id);
-      setProducts(prev => prev.filter(p => p.id !== id));
+      await deleteProduct(productToDelete.id);
+      setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
       showToast('Success', 'Product deleted successfully');
+      closeDeleteModal();
     } catch (error) {
       showToast('Error', 'Failed to delete product', 'destructive');
     }
+  };
+
+  const openDeleteDialog = (product) => {
+    setProductToDelete(product);
+    setOpenDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setOpenDeleteModal(false);
+    setProductToDelete(null);
   };
 
   const openEditModalWithProduct = (product) => {
@@ -276,7 +290,7 @@ const ProductsPage = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleDeleteProduct(product.id)}
+                onClick={() => openDeleteDialog(product)}
                 className="text-eco-dark hover:text-eco hover:bg-eco-light p-1"
               >
                 <Trash2 size={16} />
@@ -463,7 +477,6 @@ const ProductsPage = () => {
             </Button>
           </div>
         </div>
-        {/* Tabs for Products and Customize Products */}
         <div className="flex border-b border-eco-light mt-4">
           <button
             onClick={() => setActiveTab('products')}
@@ -503,13 +516,12 @@ const ProductsPage = () => {
         ) : customizeProducts.length > 0 ? (
           <div className="rounded-md border border-eco-light overflow-x-auto">
             {renderProductTable(customizeProducts)}
-          </div>
+            </div>
         ) : (
           <p className="text-center text-sm text-muted-foreground py-4">No customizable products found</p>
         )}
       </CardContent>
 
-      {/* Add Product Modal */}
       <Dialog open={openAddModal} onOpenChange={setOpenAddModal}>
         <DialogContent className="sm:max-w-4xl w-[90%] bg-eco-paper border-eco-light max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -593,7 +605,6 @@ const ProductsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Product Modal */}
       <Dialog open={openEditModal} onOpenChange={setOpenEditModal}>
         <DialogContent className="sm:max-w-4xl w-[90%] bg-eco-paper border-eco-light max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -660,6 +671,38 @@ const ProductsPage = () => {
                   Updating...
                 </>
               ) : 'Update Product'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
+        <DialogContent className="sm:max-w-md w-[90%] bg-eco-paper border-eco-light">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-heading text-eco-dark">Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-eco-dark">Are you sure you want to delete this product?</p>
+            {productToDelete && (
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground">Product: <span className="text-eco-dark">{productToDelete.name}</span></p>
+                <p className="text-sm text-muted-foreground">Category: <span className="text-eco-dark">{productToDelete.category}</span></p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeDeleteModal}
+              className="border-eco text-eco-dark hover:bg-eco-light text-sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteProduct}
+              className="bg-red-600 text-white hover:bg-red-700 text-sm"
+            >
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

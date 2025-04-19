@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Add this import
+import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { getQuotes, updateQuoteStatus, sendQuoteReply, deleteQuote } from '@/utils/api';
 import { Search, Send, Trash2 } from 'lucide-react';
@@ -36,7 +36,9 @@ const QuotesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState(null);
+  const [quoteToDelete, setQuoteToDelete] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
@@ -88,15 +90,26 @@ const QuotesPage = () => {
     }
   };
 
-  const handleDeleteQuote = async (quoteId) => {
-    if (!confirm('Are you sure you want to delete this quote request?')) return;
+  const handleDeleteQuote = async () => {
+    if (!quoteToDelete) return;
     try {
-      await deleteQuote(quoteId);
-      setQuotes(quotes.filter(quote => quote.id !== quoteId));
+      await deleteQuote(quoteToDelete.id);
+      setQuotes(quotes.filter(quote => quote.id !== quoteToDelete.id));
       showSuccess('Quote deleted successfully');
+      closeDeleteModal();
     } catch (error) {
       showError('Failed to delete quote');
     }
+  };
+
+  const openDeleteModal = (quote) => {
+    setQuoteToDelete(quote);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setQuoteToDelete(null);
   };
 
   const openReplyModal = (quote) => {
@@ -203,7 +216,7 @@ const QuotesPage = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteQuote(quote.id)}
+                        onClick={() => openDeleteModal(quote)}
                         className="text-eco-dark hover:text-eco hover:bg-eco-light p-1"
                       >
                         <Trash2 size={16} />
@@ -278,6 +291,38 @@ const QuotesPage = () => {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="sm:max-w-md w-[90%] bg-eco-paper border-eco-light">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-heading text-eco-dark">Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-eco-dark">Are you sure you want to delete this quote request?</p>
+            {quoteToDelete && (
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground">Product: <span className="text-eco-dark">{quoteToDelete.productName}</span></p>
+                <p className="text-sm text-muted-foreground">Name: <span className="text-eco-dark">{quoteToDelete.name}</span></p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeDeleteModal}
+              className="border-eco text-eco-dark hover:bg-eco-light text-sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteQuote}
+              className="bg-red-600 text-white hover:bg-red-700 text-sm"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
