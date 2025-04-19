@@ -101,7 +101,7 @@ function Footer() {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail size={18} className="flex-shrink-0" />
-                <p className="text-sm opacity-90">contact@bagstoryusa.com</p>
+                <p className="text-sm opacity-90">contact@ecologicsolutions.nyc</p>
               </div>
             </div>
           </div>

@@ -236,7 +236,7 @@ const ContactPage = () => {
               <h3 className="text-lg font-semibold mb-1">Email</h3>
               <p className="text-muted-foreground mb-4">We'll respond as soon as possible</p>
               <a href="mailto:info@ecopackagingproducts.com" className="text-eco font-medium hover:underline break-words">
-                contact@bagstoryusa.com
+                contact@ecologicsolutions.nyc
               </a>
             </div>
 
